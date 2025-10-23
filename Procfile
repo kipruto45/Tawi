@@ -1,1 +1,1 @@
-web: gunicorn tawi_project.wsgi --log-file - --workers 3
+web: gunicorn tawi_project.wsgi:application --log-file - --workers 3
