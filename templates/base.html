@@ -1,0 +1,78 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Tawi Project{% endblock %}</title>
+  
+  <!-- TailwindCSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Feather Icons -->
+  <script src="https://unpkg.com/feather-icons"></script>
+  
+  <!-- Custom Styles -->
+  <style>
+    body {
+      background-image: url('{% static "img/tawi_forest_bg.jpg" %}');
+      background-size: cover;
+      background-position: center;
+      background-attachment: fixed;
+    }
+    .glass-card {
+      background: rgba(255,255,255,0.92);
+      backdrop-filter: blur(10px);
+      border:1px solid rgba(34,197,94,0.2);
+      border-radius:18px;
+      box-shadow:0 6px 20px rgba(34,197,94,0.12);
+    }
+    .text-green-primary {
+      color: #16a34a;
+    }
+    .btn-green {
+      background: linear-gradient(to right, #22c55e, #16a34a);
+      color: white;
+    }
+    .btn-green:hover {
+      background: linear-gradient(to right, #16a34a, #15803d);
+    }
+  </style>
+
+  {% block extra_head %}{% endblock %}
+</head>
+<body class="min-h-screen flex flex-col">
+
+  <!-- Header -->
+  <header class="w-full py-4 bg-green-50/80 backdrop-blur-md border-b border-green-100">
+    <div class="max-w-7xl mx-auto px-4 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+  <img src="{% static 'img/tawi_logo.png' %}" alt="Tawi Logo" class="w-10 h-10 rounded-full border-2 border-green-300" onerror="this.onerror=null;this.src='{% static 'img/tawi_leaf_logo.svg' %}';" />
+        <h1 class="text-green-700 font-extrabold text-xl">Tawi Tree Planting Project</h1>
+      </div>
+      <nav class="space-x-4 text-green-700 font-medium text-sm">
+    <a href="{% url 'dashboard:dashboard' %}" class="hover:underline">Dashboard</a>
+    <a href="{% url 'trees:tree_list' %}" class="hover:underline">Trees</a>
+  <a href="{% url 'reports:reports-dashboard' %}" class="hover:underline">Reports</a>
+    <a href="{% url 'media_app:media_list' %}" class="hover:underline">Media</a>
+    <a href="{% url 'rest_framework:logout' %}" class="hover:underline">Logout</a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="flex-1 w-full max-w-7xl mx-auto px-4 py-6">
+    {% block content %}{% endblock %}
+  </main>
+
+  <!-- Footer -->
+  <footer class="w-full py-4 mt-auto bg-green-50/80 backdrop-blur-md border-t border-green-100 text-center text-green-400 text-xs">
+    © 2025 Tawi Tree Planting Project | Greening Nyeri 🌲
+  </footer>
+
+  <script>
+    feather.replace();
+  </script>
+
+  {% block scripts %}{% endblock %}
+</body>
+</html>

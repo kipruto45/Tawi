@@ -1,0 +1,11 @@
+import sqlite3
+conn=sqlite3.connect('db.sqlite3')
+cur=conn.cursor()
+cur.execute("SELECT app, name FROM django_migrations WHERE app='monitoring' AND name='0002_monitoringreport'")
+print('found:', cur.fetchall())
+cur.execute("DELETE FROM django_migrations WHERE app='monitoring' AND name='0002_monitoringreport'")
+conn.commit()
+cur.execute("SELECT app, name FROM django_migrations WHERE app='monitoring'")
+print('after:', cur.fetchall())
+conn.close()
+print('done')

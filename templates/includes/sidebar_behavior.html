@@ -1,0 +1,192 @@
+{% comment %}Reusable JS/CSS for dashboard sidebar accessibility and behavior.{% endcomment %}
+<style>
+  /* Ensure the sidebar is scrollable and uses smooth scrolling on touch devices */
+  aside[data-sidebar="true"] {
+    position:fixed; /* ensure pinning */
+    top:0;
+    bottom:0;
+    height:100vh;
+    -webkit-overflow-scrolling: touch;
+    overflow-y:auto;
+    scroll-behavior: smooth;
+    padding-bottom: env(safe-area-inset-bottom, 16px);
+    box-sizing: border-box;
+  }
+
+  /* Make sure the content inside the sidebar can be scrolled while header/footer remain visible */
+  /* Use a column flex layout so we can pin profile/footer and let the nav scroll */
+  aside[data-sidebar="true"] {
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* smooth transform transition for sidebar open/close */
+  aside[data-sidebar="true"] {
+    transition: transform 220ms cubic-bezier(.2,.8,.2,1);
+  }
+
+  /* The top wrapper (logo + nav) should take remaining space and scroll when necessary */
+  aside[data-sidebar="true"] > div:first-child {
+    flex: 1 1 auto;
+    min-height: 0; /* allow flex children to shrink so overflow works */
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Keep profile block and footer pinned */
+  aside[data-sidebar="true"] > #my-profile-block,
+  aside[data-sidebar="true"] > .mt-6,
+  aside[data-sidebar="true"] > div:last-child {
+    flex: 0 0 auto;
+  }
+
+  aside[data-sidebar="true"] nav {
+    /* nav flows within the scrollable top wrapper */
+    overflow: visible;
+  }
+
+  /* When sidebar is open on mobile, prevent body from scrolling */
+  body.sidebar-open { overflow: hidden; }
+
+  /* overlay shown when sidebar is open on small screens */
+  #sidebar-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.45);
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 180ms ease-in-out, visibility 0s linear 180ms;
+    z-index: 15; /* below sidebar z-20 */
+  }
+  #sidebar-overlay.show {
+    opacity: 1;
+    visibility: visible;
+    transition: opacity 180ms ease-in-out, visibility 0s linear 0s;
+  }
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const sidebar = document.querySelector('aside[data-sidebar="true"]');
+  if (!sidebar) return;
+
+  // Ensure sidebar is focusable for keyboard users
+  if (!sidebar.hasAttribute('tabindex')) sidebar.setAttribute('tabindex', '-1');
+
+  // Make sidebar hidden on small screens by using transform utility class if not present
+  // (templates use Tailwind classes like -translate-x-full / md:translate-x-0)
+
+  // Active link highlighting: compare pathname and add 'active' class to matching links
+  try {
+    const links = Array.from(sidebar.querySelectorAll('a[href]'));
+    const current = window.location.pathname.replace(/\/+$/, ''); // strip trailing slash
+    links.forEach(a => {
+      try {
+        const href = new URL(a.href, window.location.origin).pathname.replace(/\/+$/, '');
+        if (href === current || current.startsWith(href + '/')) {
+          a.classList.add('active');
+        }
+      } catch (e) {
+        // ignore invalid hrefs
+      }
+    });
+  } catch (e) { console.error(e); }
+
+  // Focus trap utilities
+  let lastFocused = null;
+  let trapListener = null;
+
+  function trapFocus(container) {
+    lastFocused = document.activeElement;
+    const focusable = container.querySelectorAll('a, button, input, textarea, select, [tabindex]:not([tabindex="-1"])');
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    if (first) first.focus();
+
+    trapListener = function(e) {
+      if (e.key === 'Tab') {
+        if (focusable.length === 0) {
+          e.preventDefault();
+          return;
+        }
+        if (e.shiftKey) {
+          if (document.activeElement === first) {
+            e.preventDefault();
+            last.focus();
+          }
+        } else {
+          if (document.activeElement === last) {
+            e.preventDefault();
+            first.focus();
+          }
+        }
+      } else if (e.key === 'Escape') {
+        closeSidebar();
+      }
+    };
+    document.addEventListener('keydown', trapListener);
+  }
+
+  function releaseFocus() {
+    if (trapListener) document.removeEventListener('keydown', trapListener);
+    trapListener = null;
+    if (lastFocused && typeof lastFocused.focus === 'function') lastFocused.focus();
+  }
+
+  const mobileToggle = document.getElementById('mobile-sidebar-toggle');
+  // create overlay if it doesn't exist
+  let overlay = document.getElementById('sidebar-overlay');
+  if (!overlay) {
+    overlay = document.createElement('div');
+    overlay.id = 'sidebar-overlay';
+    document.body.appendChild(overlay);
+  }
+  function openSidebar() {
+    sidebar.classList.remove('-translate-x-full');
+    sidebar.classList.remove('aria-hidden');
+    sidebar.setAttribute('aria-hidden', 'false');
+    document.body.classList.add('sidebar-open');
+    trapFocus(sidebar);
+    // show overlay and set aria-expanded on toggle
+    if (overlay) overlay.classList.add('show');
+    if (mobileToggle) mobileToggle.setAttribute('aria-expanded', 'true');
+  }
+
+  function closeSidebar() {
+    sidebar.classList.add('-translate-x-full');
+    sidebar.setAttribute('aria-hidden', 'true');
+    document.body.classList.remove('sidebar-open');
+    releaseFocus();
+    if (overlay) overlay.classList.remove('show');
+    if (mobileToggle) mobileToggle.setAttribute('aria-expanded', 'false');
+  }
+
+  if (mobileToggle) {
+    mobileToggle.addEventListener('click', function (e) {
+      e.preventDefault();
+      if (sidebar.classList.contains('-translate-x-full')) openSidebar(); else closeSidebar();
+    });
+  }
+
+  // close when clicking overlay
+  overlay && overlay.addEventListener('click', function () { closeSidebar(); });
+
+  // Close sidebar when clicking outside on mobile
+  document.addEventListener('click', function (ev) {
+    const isOpen = !sidebar.classList.contains('-translate-x-full');
+    if (!isOpen) return;
+    // if click is inside sidebar or on toggle, ignore
+    if (sidebar.contains(ev.target) || (mobileToggle && mobileToggle.contains(ev.target))) return;
+    // close for touches/clicks outside
+    closeSidebar();
+  });
+
+  // Ensure sidebar scrolls naturally and reveals content — no JS needed for that, but we add touch support
+  // reinforce CSS-backed scrolling for older browsers
+  sidebar.style.overflowY = sidebar.style.overflowY || 'auto';
+  sidebar.style.WebkitOverflowScrolling = sidebar.style.WebkitOverflowScrolling || 'touch';
+  // ensure the aside sits full-height even if templates didn't set top/bottom
+  try { sidebar.style.top = sidebar.style.top || '0'; sidebar.style.bottom = sidebar.style.bottom || '0'; sidebar.style.height = sidebar.style.height || '100vh'; } catch (e) {}
+
+});
+</script>

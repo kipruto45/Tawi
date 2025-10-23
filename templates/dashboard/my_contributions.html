@@ -1,0 +1,135 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>My Contributions | Tawi Tree Planting Project</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/feather-icons"></script>
+  <style>
+    body {
+      background-color: #f6fdf7;
+      color: #0f172a;
+      font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+    }
+    .glass {
+      background: rgba(255,255,255,0.96);
+      border-radius: 14px;
+      border: 1px solid rgba(34,197,94,0.12);
+      box-shadow: 0 8px 30px rgba(22,163,74,0.06);
+    }
+    .muted { color: #166534; opacity: .85; }
+  </style>
+</head>
+<body class="min-h-screen py-12 px-4 flex flex-col items-center">
+
+  <header class="w-full max-w-4xl mb-8 text-center">
+    <div class="inline-flex items-center gap-3">
+      <img src="{% static 'img/tawi_logo.png' %}" alt="Tawi" class="w-10 h-10 rounded-full border border-green-200" onerror="this.onerror=null;this.src='{% static 'img/tawi_leaf_logo.svg' %}';">
+      <h1 class="text-2xl font-extrabold text-green-800">My Contributions</h1>
+    </div>
+    <p class="text-sm text-green-600 mt-2">See your donations, volunteer sessions, seedlings provided, and other contributions to Tawi.</p>
+  </header>
+
+  <main class="w-full max-w-4xl">
+
+    <!-- Actions -->
+    <div class="flex justify-between items-center mb-6 gap-3">
+      <div class="flex items-center gap-3">
+        <a href="{% url 'donations:donations' %}" class="bg-gradient-to-r from-green-500 to-green-600 text-white px-4 py-2 rounded-md font-semibold shadow flex items-center gap-2">
+          <i data-feather="gift" class="w-4 h-4"></i> Make a Contribution
+        </a>
+        <a href="{% url 'volunteer_sign_up' %}" class="px-3 py-2 rounded-md border border-green-100 text-green-700 hover:bg-green-50 text-sm">
+          <i data-feather="user-plus" class="w-4 h-4"></i> Join an Event
+        </a>
+      </div>
+
+      <div class="text-sm text-green-600">
+        <span class="font-semibold text-green-800">{{ contributions|length }}</span> total
+      </div>
+    </div>
+
+    <!-- Contributions list -->
+    {% if contributions %}
+      <div class="grid gap-4">
+        {% for c in contributions %}
+          <article class="glass p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div class="flex items-start gap-3">
+              <div class="w-12 h-12 rounded-md bg-green-50 flex items-center justify-center text-green-600">
+                {% if c.type == 'donation' %}
+                  <i data-feather="credit-card" class="w-5 h-5"></i>
+                {% elif c.type == 'volunteer' %}
+                  <i data-feather="users" class="w-5 h-5"></i>
+                {% elif c.type == 'seedling' %}
+                  <i data-feather="leaf" class="w-5 h-5"></i>
+                {% else %}
+                  <i data-feather="check-circle" class="w-5 h-5"></i>
+                {% endif %}
+              </div>
+              <div>
+                <h3 class="text-green-800 font-semibold">{{ c.title }}</h3>
+                <p class="text-sm text-green-600 mt-0.5">{{ c.description }}</p>
+                <p class="text-xs text-green-500 mt-1">{{ c.location }}</p>
+              </div>
+            </div>
+
+            <div class="flex items-center justify-between sm:justify-end gap-4">
+              <div class="text-right">
+                <div class="text-green-800 font-semibold">
+                  {% if c.amount %}KSh {{ c.amount }}{% else %}—{% endif %}
+                </div>
+                <div class="text-xs text-green-500 mt-1">{{ c.date|date:"M d, Y" }}</div>
+              </div>
+
+              <div class="flex items-center gap-2">
+                <a href="{% url 'contribution_detail' c.pk %}" class="px-3 py-2 rounded-md border border-green-100 text-green-700 text-sm hover:bg-green-50">View</a>
+                <form method="post" action="{% url 'contribution_delete' c.pk %}" class="inline">
+                  {% csrf_token %}
+                  <button type="submit" class="px-3 py-2 rounded-md text-red-600 text-sm hover:bg-red-50 border border-red-50">Delete</button>
+                </form>
+              </div>
+            </div>
+          </article>
+        {% endfor %}
+      </div>
+
+    {% else %}
+      <!-- Empty state -->
+      <div class="glass p-8 text-center">
+        <i data-feather="heart" class="w-10 h-10 text-green-600 mx-auto mb-3"></i>
+        <h2 class="text-lg font-semibold text-green-800 mb-2">No contributions yet</h2>
+        <p class="text-sm text-green-600 mb-4">You haven’t made any contributions yet. Help us grow by donating, volunteering, or donating seedlings.</p>
+        <div class="flex items-center justify-center gap-3">
+          <a href="{% url 'donations:donations' %}" class="btn-primary bg-gradient-to-r from-green-500 to-green-600 text-white px-4 py-2 rounded-md font-semibold">
+            <i data-feather="gift" class="w-4 h-4"></i> Make a Contribution
+          </a>
+          <a href="{% url 'volunteer_sign_up' %}" class="px-3 py-2 rounded-md border border-green-100 text-green-700 hover:bg-green-50 text-sm">
+            Join an Event
+          </a>
+        </div>
+      </div>
+    {% endif %}
+
+    <!-- Pagination (optional) -->
+    {% if is_paginated %}
+      <nav class="mt-6 flex justify-center items-center gap-2 text-sm">
+        {% if page_obj.has_previous %}
+          <a href="?page={{ page_obj.previous_page_number }}" class="px-3 py-1 rounded-md bg-white border border-green-100 text-green-700">Prev</a>
+        {% endif %}
+        <span class="px-3 py-1 text-green-600">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+        {% if page_obj.has_next %}
+          <a href="?page={{ page_obj.next_page_number }}" class="px-3 py-1 rounded-md bg-white border border-green-100 text-green-700">Next</a>
+        {% endif %}
+      </nav>
+    {% endif %}
+
+  </main>
+
+  <footer class="mt-10 text-center text-green-400 text-xs">
+    © 2025 Tawi Tree Planting Project | Every Contribution Matters 🌳
+  </footer>
+
+  <script>feather.replace();</script>
+</body>
+</html>

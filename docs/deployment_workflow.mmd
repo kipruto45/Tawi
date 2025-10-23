@@ -1,0 +1,22 @@
+---
+title: Tawi Project Deployment Workflow
+---
+
+```mermaid
+flowchart LR
+  A[Local dev (git push)] --> B[Repo on GitHub]
+  B --> C[Render: Web Service]
+  C -->|Build: pip install & collectstatic| D[Gunicorn WSGI]
+  D --> E[Serve static via WhiteNoise]
+  C --> F[Managed Postgres]
+  C --> G[Redis (optional for Celery)]
+  D --> H[Health Checks]
+  H --> I[Monitoring / Logs]
+  subgraph Background
+    J[Celery Worker] -->|Consume| G
+    J -->|Run tasks| D
+  end
+
+  style A fill:#f9f,stroke:#333,stroke-width:1px
+  style C fill:#bbf,stroke:#333
+```

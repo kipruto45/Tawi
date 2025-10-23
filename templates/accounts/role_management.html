@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  {% load static %}
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Role Management | Tawi Tree Planting Project</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/feather-icons"></script>
+  <style>
+    body {
+      background-image: url('{% static "img/tawi_forest_bg.jpg" %}');
+      background-size: cover;
+      background-position: center;
+    }
+    .card {
+      background: rgba(255, 255, 255, 0.97);
+      border-radius: 18px;
+      box-shadow: 0 4px 24px rgba(34, 197, 94, 0.15);
+      border: 1.5px solid #e5e7eb;
+    }
+    .anim {
+      animation: fadeInUp 0.8s ease-out;
+    }
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: none; }
+    }
+  </style>
+</head>
+
+<body class="min-h-screen bg-cover bg-center relative flex flex-col items-center justify-start py-10 px-4">
+  <div class="absolute inset-0 bg-green-50/80"></div>
+
+  <!-- Header -->
+  <div class="relative z-10 text-center mb-6">
+  <img src="{% static 'img/tawi_logo.png' %}" alt="Tawi Logo" class="mx-auto w-12 h-12 mb-3 rounded-full shadow border-2 border-green-300" onerror="this.onerror=null;this.src='{% static 'img/tawi_leaf_logo.svg' %}';" />
+    <h1 class="text-2xl font-extrabold text-green-700">Role Management</h1>
+    <p class="text-green-500 text-xs mt-1">Manage user roles and permissions efficiently 🌿</p>
+  </div>
+
+  <!-- Main Card -->
+  <div class="relative z-10 card anim w-full max-w-5xl p-5 md:p-6 text-green-900">
+
+    <!-- Add or Edit Role Form -->
+    <div class="mb-6">
+      <h2 class="text-green-700 font-semibold text-sm flex items-center gap-2 mb-3">
+        <i data-feather="user-plus" class="w-4 h-4 text-green-500"></i> Assign or Update User Role
+      </h2>
+      <form method="POST" class="grid grid-cols-1 sm:grid-cols-3 gap-3 items-end">
+        {% csrf_token %}
+        <div>
+          <label class="text-xs text-green-600 font-medium mb-1 block">User Email</label>
+          <input type="email" name="email" placeholder="Enter user email" required
+                 class="w-full px-3 py-2 bg-green-50 border border-green-100 rounded-md focus:ring-2 focus:ring-green-400 text-sm">
+        </div>
+
+        <div>
+          <label class="text-xs text-green-600 font-medium mb-1 block">Select Role</label>
+          <select name="role" required
+                  class="w-full px-3 py-2 bg-green-50 border border-green-100 rounded-md focus:ring-2 focus:ring-green-400 text-sm">
+            <option value="">-- Choose Role --</option>
+            <option value="admin">🌿 Admin</option>
+            <option value="field_officer">🧑‍🌾 Field Officer</option>
+            <option value="partner_institution">🏫 Partner Institution</option>
+            <option value="project_manager">👩‍💼 Project Manager</option>
+            <option value="volunteer">🤝 Volunteer</option>
+            <option value="guest">👤 Guest</option>
+          </select>
+        </div>
+
+        <button type="submit"
+                class="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 transition-all py-2.5 rounded-md font-semibold shadow flex items-center justify-center gap-2 text-white text-sm mt-4 sm:mt-0">
+          <i data-feather="save" class="w-4 h-4"></i> Save Role
+        </button>
+      </form>
+    </div>
+
+    <!-- User Roles Table -->
+    <div>
+      <h2 class="text-green-700 font-semibold text-sm flex items-center gap-2 mb-3">
+        <i data-feather="users" class="w-4 h-4 text-green-500"></i> Current User Roles
+      </h2>
+
+      <div class="overflow-x-auto">
+        <table class="min-w-full bg-white rounded-md shadow border border-green-100 text-sm">
+          <thead class="bg-green-100 text-green-700 uppercase text-xs">
+            <tr>
+              <th class="px-4 py-2 text-left">#</th>
+              <th class="px-4 py-2 text-left">User</th>
+              <th class="px-4 py-2 text-left">Email</th>
+              <th class="px-4 py-2 text-left">Role</th>
+              <th class="px-4 py-2 text-left">Last Updated</th>
+              <th class="px-4 py-2 text-center">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for user in users %}
+            <tr class="border-t border-green-100 hover:bg-green-50 transition">
+              <td class="px-4 py-2">{{ forloop.counter }}</td>
+              <td class="px-4 py-2 font-medium text-green-700">{{ user.get_full_name|default:user.username }}</td>
+              <td class="px-4 py-2 text-green-600">{{ user.email }}</td>
+              <td class="px-4 py-2">
+                <span class="text-xs font-semibold px-2 py-1 rounded-full 
+                             {% if user.role == 'admin' %}bg-green-600 text-white
+                             {% elif user.role == 'field_officer' %}bg-green-200 text-green-800
+                             {% elif user.role == 'partner_institution' %}bg-green-100 text-green-700
+                             {% elif user.role == 'project_manager' %}bg-emerald-100 text-emerald-800
+                             {% elif user.role == 'volunteer' %}bg-emerald-50 text-emerald-800
+                             {% else %}bg-gray-100 text-green-600{% endif %}">
+                  {{ user.role|default:'guest'|capfirst }}
+                </span>
+              </td>
+              <td class="px-4 py-2 text-green-500 text-xs">{{ user.profile.updated_at|default:user.date_joined|date:"M d, Y H:i" }}</td>
+              <td class="px-4 py-2 text-center flex justify-center gap-2">
+                <a href="{% url 'accounts:role_edit' user.id %}" class="text-green-600 hover:text-green-800">
+                  <i data-feather="edit-2" class="w-4 h-4"></i>
+                </a>
+                <a href="{% url 'accounts:role_delete' user.id %}" class="text-red-500 hover:text-red-700">
+                  <i data-feather="trash-2" class="w-4 h-4"></i>
+                </a>
+              </td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="6" class="text-center py-4 text-green-600 text-sm">
+                No users found. 🌱
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Footer Actions -->
+    <div class="mt-6 flex justify-center gap-3">
+      <a href="{% url 'dashboard:dashboard' %}"
+         class="bg-green-600 hover:bg-green-700 text-white text-sm px-4 py-2 rounded-md shadow flex items-center gap-1 transition">
+        <i data-feather="home" class="w-4 h-4"></i> Back to Dashboard
+      </a>
+      <a href="{% url 'accounts:add_user' %}"
+         class="bg-green-100 hover:bg-green-200 text-green-700 text-sm px-4 py-2 rounded-md shadow flex items-center gap-1 transition">
+        <i data-feather="user-plus" class="w-4 h-4"></i> Add New User
+      </a>
+    </div>
+
+    <!-- Footer -->
+    <p class="text-center text-[10px] text-green-400 mt-6">
+      © 2025 Tawi Tree Planting Project | Empowering Green Leaders 🌳
+    </p>
+  </div>
+
+  <script>feather.replace();</script>
+</body>
+</html>

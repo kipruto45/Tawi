@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  {% load static %}
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>QR Code Details | Tawi Tree Planting Project</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/feather-icons"></script>
+  <style>
+    body {
+      background-image: url('{% static "img/tawi_forest_bg.jpg" %}');
+      background-size: cover;
+      background-position: center;
+      background-attachment: fixed;
+    }
+    .glass {
+      background: rgba(255,255,255,0.92);
+      backdrop-filter: blur(10px);
+      border:1px solid rgba(34,197,94,0.2);
+      border-radius:18px;
+      box-shadow:0 6px 20px rgba(34,197,94,0.12);
+    }
+    .info-label {
+      color: #16a34a;
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col items-center justify-start p-8">
+
+  <!-- Header -->
+  <header class="mb-6 text-center">
+  <img src="{% static 'img/tawi_logo.png' %}" alt="Tawi Logo" class="w-12 h-12 mx-auto rounded-full border border-green-300 mb-2" onerror="this.onerror=null;this.src='{% static 'img/tawi_leaf_logo.svg' %}';" />
+    <h1 class="text-2xl font-extrabold text-green-700">QR Code Details</h1>
+    <p class="text-green-600 text-sm mt-1">Detailed information of the selected QR code 🌿</p>
+  </header>
+
+  <!-- QR Code Details Card -->
+  <section class="glass w-full max-w-3xl p-6 space-y-4">
+    <div class="flex justify-between items-center">
+      <h2 class="text-lg font-semibold text-green-700">{{ qrcode.title }}</h2>
+      <span class="text-xs px-2 py-1 rounded-full
+            {% if qrcode.status == 'Active' %}bg-green-100 text-green-700
+            {% elif qrcode.status == 'Inactive' %}bg-red-100 text-red-700
+            {% else %}bg-gray-100 text-gray-700{% endif %}">
+        {{ qrcode.status }}
+      </span>
+    </div>
+
+    <div>
+      <p class="info-label">QR Code Data</p>
+      <p class="text-green-600 break-words">{{ qrcode.data|default:"No data available." }}</p>
+    </div>
+
+    <div>
+      <p class="info-label">Created By</p>
+      <p class="text-green-600">{{ qrcode.creator.get_full_name|default:qrcode.creator.username }}</p>
+    </div>
+
+    <div>
+      <p class="info-label">Created At</p>
+      <p class="text-green-600 text-xs">{{ qrcode.created_at|date:"M d, Y H:i" }}</p>
+    </div>
+
+    <div>
+      <p class="info-label">Last Scanned At</p>
+      <p class="text-green-600 text-xs">{{ qrcode.last_scanned_at|default:"Never" }}</p>
+    </div>
+
+    <div class="flex justify-between mt-4">
+      <a href="{% url 'qrcodes:qrcode_scan' %}" class="bg-green-100 hover:bg-green-200 text-green-700 text-sm px-4 py-2 rounded-md shadow flex items-center gap-2 transition">
+        <i data-feather="rotate-ccw" class="w-4 h-4"></i> Scan QR Code
+      </a>
+      <a href="{% url 'qrcode_history' %}" class="bg-green-500 hover:bg-green-600 text-white text-sm px-4 py-2 rounded-md shadow flex items-center gap-2 transition">
+        <i data-feather="list" class="w-4 h-4"></i> View Scan History
+      </a>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="mt-6 text-center text-green-400 text-xs">
+    © 2025 Tawi Tree Planting Project | QR Code Details
+  </footer>
+
+  <script>feather.replace();</script>
+</body>
+</html>

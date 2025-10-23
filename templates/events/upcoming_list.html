@@ -1,0 +1,92 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Upcoming Events | Tawi Tree Planting Project</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/feather-icons"></script>
+  <style>
+    body {
+      background-color: #f0fdf4; /* soft eco-green background */
+      color: #1f2937;
+      font-family: 'Inter', sans-serif;
+    }
+    .glass {
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(10px);
+      border-radius: 20px;
+      border: 1px solid rgba(34, 197, 94, 0.25);
+      box-shadow: 0 8px 24px rgba(22, 163, 74, 0.12);
+    }
+    .event-card {
+      transition: transform 0.2s ease, box-shadow 0.3s ease;
+    }
+    .event-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 10px 24px rgba(34, 197, 94, 0.25);
+    }
+    .btn-green {
+      background: linear-gradient(to right, #22c55e, #16a34a);
+      color: white;
+      padding: 0.6rem 1.2rem;
+      border-radius: 8px;
+      font-weight: 600;
+      transition: all 0.25s ease;
+    }
+    .btn-green:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(34, 197, 94, 0.3);
+    }
+  </style>
+</head>
+
+<body class="min-h-screen px-4 py-10 flex flex-col items-center">
+  <div class="max-w-4xl w-full">
+    <div class="text-center mb-10">
+      <h1 class="text-3xl font-extrabold text-green-700 mb-2 flex justify-center items-center gap-2">
+        <i data-feather="calendar" class="w-6 h-6 text-green-600"></i> Upcoming Events
+      </h1>
+      <p class="text-green-600 text-sm">Join us in growing a greener future 🌱</p>
+    </div>
+
+    {% if events %}
+      <div class="grid md:grid-cols-2 gap-6">
+        {% for event in events %}
+          <div class="glass event-card p-6">
+            <h2 class="text-xl font-semibold text-green-700 mb-2">{{ event.name }}</h2>
+            <div class="text-sm text-green-600 space-y-1 mb-3">
+              <p class="flex items-center gap-2">
+                <i data-feather="calendar" class="w-4 h-4 text-green-500"></i> 
+                {{ event.date|date:"F j, Y" }}
+              </p>
+              <p class="flex items-center gap-2">
+                <i data-feather="map-pin" class="w-4 h-4 text-green-500"></i> 
+                {{ event.location }}
+              </p>
+            </div>
+            <p class="text-gray-600 mb-4 text-sm line-clamp-2">
+              {{ event.description|truncatechars:120 }}
+            </p>
+            <a href="{% url 'events:upcoming_event_detail' event.pk %}" class="btn-green inline-flex items-center gap-2">
+              <i data-feather="eye" class="w-4 h-4"></i> View Details
+            </a>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="glass p-6 text-center text-green-700 font-medium">
+        <i data-feather="frown" class="w-6 h-6 inline text-green-500 mb-1"></i><br>
+        No upcoming events at the moment. Check back soon 🌳
+      </div>
+    {% endif %}
+  </div>
+
+  <footer class="mt-12 text-center text-green-400 text-xs">
+    © 2025 Tawi Tree Planting Project | Together for a Greener Future 🌿
+  </footer>
+
+  <script>feather.replace();</script>
+</body>
+</html>

@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  {% load static %}
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Notifications | Tawi Tree Planting Project</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/feather-icons"></script>
+  <style>
+    body {
+      background-image: url('{% static "img/tawi_forest_bg.jpg" %}');
+      background-size: cover;
+      background-position: center;
+    }
+    .card {
+      background: rgba(255, 255, 255, 0.96);
+      border-radius: 18px;
+      box-shadow: 0 4px 24px rgba(34, 197, 94, 0.1);
+      border: 1px solid #e5e7eb;
+    }
+    .notif-anim {
+      animation: notifFadeIn 0.8s ease-out;
+    }
+    @keyframes notifFadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: none; }
+    }
+  </style>
+</head>
+
+<body class="min-h-screen bg-cover bg-center relative">
+  <div class="absolute inset-0 bg-green-50/80"></div>
+
+  <!-- Page Wrapper -->
+  <div class="relative z-10 min-h-screen flex flex-col items-center justify-start py-10 px-4">
+
+    <!-- Header -->
+    <div class="w-full max-w-3xl text-center mb-8">
+  <img src="{% static 'img/tawi_logo.png' %}" alt="Tawi Logo" class="mx-auto w-12 h-12 rounded-full shadow border-2 border-green-300 mb-2" onerror="this.onerror=null;this.src='{% static 'img/tawi_leaf_logo.svg' %}';" />
+      <h1 class="text-2xl font-extrabold text-green-700">Notifications Center</h1>
+      <p class="text-green-500 text-sm">Stay informed about your planting activities, reports, and updates 🌿</p>
+    </div>
+
+  <!-- Notifications Container -->
+  <div class="card notif-anim w-full max-w-3xl p-5 md:p-6 space-y-3 overflow-y-auto max-h-[70vh]" role="region" aria-labelledby="notifications-heading">
+
+      <!-- No Notifications -->
+      {% if notifications|length == 0 %}
+      <div class="text-center text-green-600 text-sm py-8">
+        <i data-feather="bell-off" class="w-6 h-6 mx-auto mb-2 text-green-400"></i>
+        <p>No notifications available. You’re all caught up! 🌱</p>
+      </div>
+      {% endif %}
+
+      <!-- Notification List -->
+  {% for notification in notifications %}
+  <div class="flex items-start gap-3 bg-green-50/70 hover:bg-green-100 transition rounded-md p-3 border border-green-100 notif-item" data-notif-id="{{ notification.id }}" role="article" aria-live="polite" tabindex="0">
+        <!-- Icon -->
+        <div class="flex-shrink-0 mt-1">
+          {% if notification.notification_type == 'system' %}
+            <i data-feather="settings" class="text-green-500 w-5 h-5"></i>
+          {% elif notification.notification_type == 'report' %}
+            <i data-feather="file-text" class="text-green-500 w-5 h-5"></i>
+          {% elif notification.notification_type == 'planting' %}
+            <i data-feather="tree" class="text-green-500 w-5 h-5"></i>
+          {% elif notification.notification_type == 'feedback' %}
+            <i data-feather="message-circle" class="text-green-500 w-5 h-5"></i>
+          {% elif notification.notification_type == 'reminder' %}
+            <i data-feather="clock" class="text-green-500 w-5 h-5"></i>
+          {% else %}
+            <i data-feather="bell" class="text-green-500 w-5 h-5"></i>
+          {% endif %}
+        </div>
+
+        <!-- Content -->
+        <div class="flex-1">
+          <h3 class="text-green-800 font-semibold text-sm">{{ notification.verb }}</h3>
+          <p class="text-green-700 text-xs leading-snug mt-0.5">{{ notification.description }}</p>
+          <div class="flex justify-between items-center mt-1">
+            <span class="text-[10px] text-green-400">{{ notification.created_at|date:"M d, Y H:i" }}</span>
+            <div class="flex items-center gap-2">
+              {% if not notification.is_read %}
+                <span class="text-[10px] new-badge bg-green-200 text-green-800 px-2 py-0.5 rounded-full font-medium" aria-hidden="true">New</span>
+              {% endif %}
+              <button type="button" class="mark-btn text-[11px] text-green-600 hover:text-green-800" data-id="{{ notification.id }}" aria-label="Mark notification {{ forloop.counter }} as read">Mark read</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="flex flex-wrap justify-center gap-3 mt-6">
+      <a href="{% url 'dashboard:dashboard' %}"
+         class="bg-green-600 hover:bg-green-700 text-white text-sm px-4 py-2 rounded-md shadow flex items-center gap-1 transition">
+        <i data-feather="home" class="w-4 h-4"></i> Back to Dashboard
+      </a>
+      <form method="POST" action="{% url 'notifications:notifications_clear' %}" class="inline">
+        {% csrf_token %}
+        <button type="submit" class="bg-green-100 hover:bg-green-200 text-green-700 text-sm px-4 py-2 rounded-md shadow flex items-center gap-1 transition">
+          <i data-feather="trash-2" class="w-4 h-4"></i> Clear All
+        </button>
+      </form>
+    </div>
+
+    <!-- Footer -->
+    <p class="text-center text-[10px] text-green-400 mt-6">
+      © 2025 Tawi Tree Planting Project | Every Tree Matters 🌳
+    </p>
+  </div>
+
+  <script>feather.replace();</script>
+  <script>
+    // Mark notification read on click or keyboard (Enter/Space) with fade-out animation + undo toast and screen-reader announcement
+    (function(){
+      const csrf = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '';
+
+      // aria-live region for screen reader announcements
+      let announcer = document.createElement('div');
+      announcer.setAttribute('aria-live','polite');
+      announcer.setAttribute('aria-atomic','true');
+      announcer.style.position = 'absolute';
+      announcer.style.left = '-9999px';
+      announcer.style.width = '1px';
+      document.body.appendChild(announcer);
+
+      // Undo toast container
+      const toastContainer = document.createElement('div');
+      toastContainer.id = 'notif-toast-container';
+      toastContainer.className = 'fixed bottom-6 right-6 space-y-2 z-50';
+      document.body.appendChild(toastContainer);
+
+      function attachHandlersToItem(el){
+        const btn = el.querySelector('.mark-btn');
+        if(btn){
+          btn.addEventListener('click', function(e){ e.stopPropagation(); markReadEl(el); });
+          btn.addEventListener('keydown', function(e){ if(e.key === 'Enter' || e.key === ' ') { e.preventDefault(); markReadEl(el); } });
+        }
+        el.addEventListener('keydown', function(e){ if(e.key === 'Enter' || e.key === ' ') { e.preventDefault(); markReadEl(el); } });
+      }
+
+      function markReadEl(el){
+        const id = el.getAttribute('data-notif-id');
+        if(!id) return;
+        fetch(`{% url 'notifications:notifications_mark' 0 %}`.replace('/0/', `/${id}/`), {
+          method: 'POST', headers: {'X-CSRFToken': csrf}
+        }).then(res => {
+          if(res.ok){
+            // announce to screen readers
+            announcer.textContent = 'Notification marked as read';
+
+            // animate collapse + fade: set explicit max-height then collapse for smooth transition
+            const clone = el.cloneNode(true);
+            el.style.maxHeight = el.scrollHeight + 'px';
+            // trigger reflow then animate
+            void el.offsetHeight;
+            el.classList.add('fade-out');
+            el.style.maxHeight = '0px';
+            // remove after animation (450ms)
+            setTimeout(()=> el.remove(), 450);
+
+          // show visible accessible toast (also announces via announcer)
+          const toast = document.createElement('div');
+          toast.className = 'notif-toast bg-white border px-4 py-2 rounded shadow flex items-center gap-3 transform transition-all';
+            toast.setAttribute('role','status');
+            toast.setAttribute('aria-live','polite');
+            const span = document.createElement('span');
+            span.className = 'text-sm text-green-800';
+            span.textContent = 'Notification marked';
+            toast.appendChild(span);
+            const undoBtn = document.createElement('button');
+            undoBtn.className = 'text-sm text-green-600 underline';
+            undoBtn.textContent = 'Undo';
+            toast.appendChild(undoBtn);
+            toastContainer.appendChild(toast);
+            // animate entrance
+            requestAnimationFrame(()=>{ toast.classList.add('notif-toast-enter'); });
+
+            // announce for screen readers
+            announcer.textContent = 'Notification marked as read. Undo available.';
+
+            // auto-dismiss after 8s
+            const timer = setTimeout(()=> { toast.classList.add('notif-toast-exit'); setTimeout(()=> toast.remove(), 300); }, 8000);
+
+            undoBtn.addEventListener('click', function(){
+              clearTimeout(timer);
+              fetch(`{% url 'notifications:notifications_unmark' 0 %}`.replace('/0/', `/${id}/`), { method: 'POST', headers: {'X-CSRFToken': csrf} })
+                .then(r => {
+                  if(r.ok){
+                    // insert clone at the top of the card list
+                    const card = document.querySelector('.card');
+                    if(card){
+                      card.insertBefore(clone, card.querySelector('.notif-item'));
+                      attachHandlersToItem(clone);
+                    }
+                    toast.classList.add('notif-toast-exit'); setTimeout(()=> toast.remove(), 300);
+                    announcer.textContent = 'Undo successful. Notification restored';
+                  }
+                }).catch(()=>{});
+            });
+          }
+        }).catch(()=>{});
+      }
+
+      // attach handlers to existing items
+      document.querySelectorAll('.notif-item').forEach(function(el){ attachHandlersToItem(el); });
+
+    })();
+  </script>
+
+  <style>
+    /* fade-out animation for removed notifications */
+    .fade-out{ opacity: 1; transform-origin: left top; transition: opacity .45s ease, transform .45s ease, max-height .45s ease; opacity: 0; transform: translateY(-6px) scale(.98); }
+    .notif-toast { opacity: 0; transform: translateY(8px) scale(.98); }
+    .notif-toast-enter { opacity: 1; transform: translateY(0px) scale(1); transition: opacity .22s ease, transform .22s ease; }
+    .notif-toast-exit { opacity: 0; transform: translateY(8px) scale(.98); transition: opacity .18s ease, transform .18s ease; }
+    #notif-toast-container > .notif-toast + .notif-toast { margin-top: 0.5rem; }
+  </style>
+</body>
+</html>

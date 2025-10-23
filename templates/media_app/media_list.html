@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  {% load static %}
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Media List | Tawi Tree Planting Project</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/feather-icons"></script>
+  <style>
+    body {
+      background-image: url('{% static "img/tawi_forest_bg.jpg" %}');
+      background-size: cover;
+      background-position: center;
+      background-attachment: fixed;
+    }
+    .glass {
+      background: rgba(255,255,255,0.92);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(34,197,94,0.2);
+      border-radius: 18px;
+      box-shadow: 0 6px 20px rgba(34,197,94,0.12);
+    }
+    .btn-green {
+      background: linear-gradient(to right, #22c55e, #16a34a);
+      color: white;
+      padding: 0.5rem 1.2rem;
+      border-radius: 10px;
+      font-weight: 600;
+      transition: all 0.2s ease;
+    }
+    .btn-green:hover {
+      background: linear-gradient(to right, #16a34a, #15803d);
+      transform: translateY(-2px);
+    }
+  </style>
+</head>
+
+<body class="min-h-screen flex flex-col bg-green-50/70">
+
+  <!-- Main Content -->
+  <main class="flex-1 p-6">
+    <section class="glass p-6 max-w-6xl mx-auto">
+      <div class="flex justify-between items-center mb-6">
+        <h2 class="text-lg font-semibold text-green-700 flex items-center gap-2">
+          <i data-feather="list" class="w-5 h-5 text-green-600"></i> Uploaded Media
+        </h2>
+        <a href="{% url 'media_app:media_upload' %}" class="btn-green flex items-center gap-1 text-sm">
+          <i data-feather="upload" class="w-4 h-4"></i> Upload Media
+        </a>
+      </div>
+
+      <div class="overflow-x-auto">
+        <table class="min-w-full text-sm text-left">
+          <thead class="bg-green-100 text-green-700 uppercase text-xs">
+            <tr>
+              <th class="px-4 py-2">#</th>
+              <th class="px-4 py-2">Title</th>
+              <th class="px-4 py-2">Type</th>
+              <th class="px-4 py-2">Uploaded By</th>
+              <th class="px-4 py-2">Uploaded On</th>
+              <th class="px-4 py-2 text-center">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for media in media_list %}
+            <tr class="border-t border-green-100 hover:bg-green-50 transition">
+              <td class="px-4 py-2">{{ forloop.counter }}</td>
+              <td class="px-4 py-2 font-medium text-green-700">{{ media.title }}</td>
+              <td class="px-4 py-2 text-green-600">{{ media.file_type|capfirst }}</td>
+              <td class="px-4 py-2">{{ media.uploaded_by.username }}</td>
+              <td class="px-4 py-2 text-green-500 text-xs">{{ media.created_at|date:"M d, Y H:i" }}</td>
+              <td class="px-4 py-2 text-center flex justify-center gap-3">
+                <a href="{{ media.file.url }}" download class="text-green-600 hover:text-green-800">
+                  <i data-feather="download" class="w-4 h-4"></i>
+                </a>
+                <a href="{% url 'media_app:media_detail' media.id %}" class="text-green-600 hover:text-green-800">
+                  <i data-feather="eye" class="w-4 h-4"></i>
+                </a>
+                <a href="{% url 'media_app:media_edit' media.id %}" class="text-green-600 hover:text-green-800">
+                  <i data-feather="edit" class="w-4 h-4"></i>
+                </a>
+                <a href="{% url 'media_app:media_delete' media.id %}" class="text-red-500 hover:text-red-700">
+                  <i data-feather="trash-2" class="w-4 h-4"></i>
+                </a>
+              </td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="6" class="text-center py-4 text-green-600">No media found 🌱</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <!-- Footer -->
+  <footer class="w-full text-center text-green-500 text-sm py-4 bg-white/70 backdrop-blur-md border-t border-green-100">
+    © 2025 Tawi Tree Planting Project | Media Portal 🌳
+  </footer>
+
+  <script>feather.replace();</script>
+</body>
+</html>

@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  {% load static %}
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Create Report | Tawi Tree Planting Project</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/feather-icons"></script>
+  <style>
+    body {
+      background-image: url('{% static "img/tawi_forest_bg.jpg" %}');
+      background-size: cover;
+      background-position: center;
+      background-attachment: fixed;
+    }
+    .glass {
+      background: rgba(255,255,255,0.92);
+      backdrop-filter: blur(10px);
+      border:1px solid rgba(34,197,94,0.2);
+      border-radius:18px;
+      box-shadow:0 6px 20px rgba(34,197,94,0.12);
+    }
+    .label-green {
+      color: #16a34a;
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col items-center justify-start p-8">
+
+  <!-- Header -->
+  <header class="mb-6 text-center">
+  <img src="{% static 'img/tawi_logo.png' %}" alt="Tawi Logo" class="w-12 h-12 mx-auto rounded-full border border-green-300 mb-2" onerror="this.onerror=null;this.src='{% static 'img/tawi_leaf_logo.svg' %}';" />
+    <h1 class="text-2xl font-extrabold text-green-700">Create Report</h1>
+    <p class="text-green-600 text-sm mt-1">Fill in details to generate a new report 🌿</p>
+  </header>
+
+  <!-- Report Form Card -->
+  <section class="glass w-full max-w-3xl p-6 space-y-4">
+
+    <form method="POST">
+      {% csrf_token %}
+
+      <div class="mb-4">
+        <label class="label-green block mb-1">Report Title</label>
+        <input type="text" name="title" placeholder="Enter report title" required
+               class="w-full px-3 py-2 border border-green-100 rounded-md focus:ring-2 focus:ring-green-400 text-green-700">
+      </div>
+
+      <div class="mb-4">
+        <label class="label-green block mb-1">Report Description</label>
+        <textarea name="description" rows="4" placeholder="Enter report description" required
+                  class="w-full px-3 py-2 border border-green-100 rounded-md focus:ring-2 focus:ring-green-400 text-green-700"></textarea>
+      </div>
+
+      <div class="mb-4">
+        <label class="label-green block mb-1">Report Type</label>
+        <select name="type" required
+                class="w-full px-3 py-2 border border-green-100 rounded-md focus:ring-2 focus:ring-green-400 text-green-700">
+          <option value="">-- Select Type --</option>
+          <option value="Monitoring">Monitoring</option>
+          <option value="Field Activity">Field Activity</option>
+          <option value="Donation">Donation</option>
+          <option value="Project">Project</option>
+        </select>
+      </div>
+
+      <div class="flex justify-between mt-6">
+        <a href="{% url 'report_list' %}" class="bg-green-100 hover:bg-green-200 text-green-700 text-sm px-4 py-2 rounded-md shadow flex items-center gap-2 transition">
+          <i data-feather="arrow-left" class="w-4 h-4"></i> Back to Reports
+        </a>
+        <button type="submit" class="bg-green-500 hover:bg-green-600 text-white text-sm px-4 py-2 rounded-md shadow flex items-center gap-2 transition">
+          <i data-feather="save" class="w-4 h-4"></i> Save Report
+        </button>
+      </div>
+
+    </form>
+
+  </section>
+
+  <!-- Footer -->
+  <footer class="mt-6 text-center text-green-400 text-xs">
+    © 2025 Tawi Tree Planting Project | Create Report
+  </footer>
+
+  <script>feather.replace();</script>
+</body>
+</html>

@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  {% load static %}
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Report Downloads | Tawi Tree Planting Project</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/feather-icons"></script>
+  <style>
+    body {
+      background-image: url('{% static "img/tawi_forest_bg.jpg" %}');
+      background-size: cover;
+      background-position: center;
+      background-attachment: fixed;
+    }
+    .glass {
+      background: rgba(255,255,255,0.92);
+      backdrop-filter: blur(10px);
+      border:1px solid rgba(34,197,94,0.2);
+      border-radius:18px;
+      box-shadow:0 6px 20px rgba(34,197,94,0.12);
+    }
+    .label-green {
+      color: #16a34a;
+      font-weight: 600;
+    }
+    table th, table td {
+      padding: 0.5rem 0.75rem;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col items-center justify-start p-8">
+
+  <!-- Header -->
+  <header class="mb-6 text-center">
+  <img src="{% static 'img/tawi_logo.png' %}" alt="Tawi Logo" class="w-12 h-12 mx-auto rounded-full border border-green-300 mb-2" onerror="this.onerror=null;this.src='{% static 'img/tawi_leaf_logo.svg' %}';" />
+    <h1 class="text-2xl font-extrabold text-green-700">Report Downloads</h1>
+    <p class="text-green-600 text-sm mt-1">Download your generated reports easily 🌿</p>
+  </header>
+
+  <!-- Reports Table Card -->
+  <section class="glass w-full max-w-5xl p-6">
+
+    <div class="overflow-x-auto">
+      <table class="min-w-full text-left border border-green-100 rounded-md shadow-sm">
+        <thead class="bg-green-100 text-green-700 uppercase text-xs">
+          <tr>
+            <th>#</th>
+            <th>Title</th>
+            <th>Type</th>
+            <th>Status</th>
+            <th>Created At</th>
+            <th class="text-center">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for report in reports %}
+          <tr class="border-t border-green-100 hover:bg-green-50 transition">
+            <td>{{ forloop.counter }}</td>
+            <td class="font-medium text-green-700">{{ report.title }}</td>
+            <td class="text-green-600">{{ report.type }}</td>
+            <td>
+              <span class="text-xs px-2 py-1 rounded-full
+                    {% if report.status == 'Completed' %}bg-green-100 text-green-700
+                    {% elif report.status == 'Pending' %}bg-yellow-100 text-yellow-700
+                    {% else %}bg-gray-100 text-gray-700{% endif %}">
+                {{ report.status }}
+              </span>
+            </td>
+            <td class="text-green-500 text-xs">{{ report.created_at|date:"M d, Y H:i" }}</td>
+            <td class="text-center flex justify-center gap-2">
+              <a href="{% url 'reports:report_detail' report.id %}" class="text-green-600 hover:text-green-800">
+                <i data-feather="eye" class="w-4 h-4"></i>
+              </a>
+              <a href="{% url 'reports:report_download' report.id %}" class="text-white bg-green-500 hover:bg-green-600 px-2 py-1 rounded-md shadow flex items-center gap-1">
+                <i data-feather="download" class="w-4 h-4"></i> Download
+              </a>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="6" class="text-center py-4 text-green-600 text-sm">
+              No reports available for download 🌱
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="mt-4 flex justify-end">
+      <a href="{% url 'reports:report_create' %}" class="bg-green-500 hover:bg-green-600 text-white text-sm px-4 py-2 rounded-md shadow flex items-center gap-2 transition">
+        <i data-feather="plus" class="w-4 h-4"></i> Create New Report
+      </a>
+    </div>
+
+  </section>
+
+  <!-- Footer -->
+  <footer class="mt-6 text-center text-green-400 text-xs">
+    © 2025 Tawi Tree Planting Project | Report Downloads
+  </footer>
+
+  <script>feather.replace();</script>
+</body>
+</html>

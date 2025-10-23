@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  {% load static %}
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tree List | Tawi Tree Planting Project</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/feather-icons"></script>
+  <style>
+    body {
+      background-image: url('{% static "img/tawi_forest_bg.jpg" %}');
+      background-size: cover;
+      background-position: center;
+      background-attachment: fixed;
+    }
+    .glass {
+      background: rgba(255,255,255,0.92);
+      backdrop-filter: blur(10px);
+      border:1px solid rgba(34,197,94,0.2);
+      border-radius:18px;
+      box-shadow:0 6px 20px rgba(34,197,94,0.12);
+    }
+    .status-badge {
+      font-size: 0.7rem;
+      font-weight: 600;
+      padding: 0.2rem 0.5rem;
+      border-radius: 9999px;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col items-center justify-start p-8">
+
+  <!-- Header -->
+  <header class="mb-6 text-center">
+  <img src="{% static 'img/tawi_logo.png' %}" alt="Tawi Logo" class="w-12 h-12 mx-auto rounded-full border border-green-300 mb-2" onerror="this.onerror=null;this.src='{% static 'img/tawi_leaf_logo.svg' %}';" />
+    <h1 class="text-2xl font-extrabold text-green-700">Tree List</h1>
+    <p class="text-green-600 text-sm mt-1">Overview of all trees planted 🌿</p>
+  </header>
+
+  <!-- Tree List Table -->
+  <section class="glass w-full max-w-6xl p-6">
+    <div class="flex justify-between items-center mb-4">
+      <h2 class="text-lg font-semibold text-green-700">All Trees</h2>
+  <a href="{% url 'trees:tree_add' %}" class="bg-green-500 hover:bg-green-600 text-white text-sm px-4 py-2 rounded-md shadow flex items-center gap-2 transition">
+        <i data-feather="plus" class="w-4 h-4"></i> Add New Tree
+      </a>
+    </div>
+
+    <div class="overflow-x-auto">
+      <table class="min-w-full bg-white rounded-md shadow border border-green-100 text-sm">
+        <thead class="bg-green-100 text-green-700 uppercase text-xs">
+          <tr>
+            <th class="px-4 py-2 text-left">#</th>
+            <th class="px-4 py-2 text-left">Name</th>
+            <th class="px-4 py-2 text-left">Species</th>
+            <th class="px-4 py-2 text-left">Location</th>
+            <th class="px-4 py-2 text-left">Planting Date</th>
+            <th class="px-4 py-2 text-left">Status</th>
+            <th class="px-4 py-2 text-center">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for tree in trees %}
+          <tr class="border-t border-green-100 hover:bg-green-50 transition">
+            <td class="px-4 py-2">{{ forloop.counter }}</td>
+            <td class="px-4 py-2 font-medium text-green-700">{{ tree.name }}</td>
+            <td class="px-4 py-2 text-green-600">{{ tree.species|default:"-" }}</td>
+            <td class="px-4 py-2 text-green-600">{{ tree.location|default:"-" }}</td>
+            <td class="px-4 py-2 text-green-500 text-xs">{{ tree.planting_date|date:"M d, Y" }}</td>
+            <td class="px-4 py-2">
+              <span class="status-badge 
+                    {% if tree.status == 'Healthy' %}bg-green-100 text-green-700
+                    {% elif tree.status == 'Diseased' %}bg-red-100 text-red-700
+                    {% else %}bg-gray-100 text-gray-700{% endif %}">
+                {{ tree.status }}
+              </span>
+            </td>
+            <td class="px-4 py-2 text-center flex justify-center gap-2">
+              <a href="{% url 'trees:tree_detail' tree.id %}" class="text-green-600 hover:text-green-800">
+                <i data-feather="eye" class="w-4 h-4"></i>
+              </a>
+              <a href="{% url 'trees:tree_edit' tree.id %}" class="text-green-500 hover:text-green-700">
+                <i data-feather="edit-2" class="w-4 h-4"></i>
+              </a>
+              <a href="{% url 'trees:tree_delete' tree.id %}" class="text-red-500 hover:text-red-700">
+                <i data-feather="trash-2" class="w-4 h-4"></i>
+              </a>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="7" class="text-center py-4 text-green-600 text-sm">No trees found 🌱</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="mt-6 text-center text-green-400 text-xs">
+    © 2025 Tawi Tree Planting Project | Tree List
+  </footer>
+
+  <script>feather.replace();</script>
+</body>
+</html>

@@ -1,0 +1,41 @@
+# Example Render service configuration (not strictly required)
+# Use this file as a starting point for `render deploy` if you use the Render CLI.
+# Adjust names, plan, env vars and database settings as needed.
+services:
+  - type: web
+    name: tawi-web
+    env: python
+    plan: starter
+    buildCommand: "pip install -r requirements.txt && python manage.py collectstatic --noinput"
+    startCommand: "gunicorn tawi_project.wsgi --log-file - --workers 3"
+    envVars:
+      - key: DJANGO_DEBUG
+        value: "False"
+      - key: SECRET_KEY
+        scope: SECRET
+      - key: DATABASE_URL
+        scope: SECRET
+      - key: EMAIL_HOST
+        scope: SECRET
+      - key: EMAIL_HOST_USER
+        scope: SECRET
+      - key: EMAIL_HOST_PASSWORD
+        scope: SECRET
+      - key: STRIPE_SECRET_KEY
+        scope: SECRET
+  - type: database
+    name: tawi-db
+    plan: standard-0
+    database:
+      engine: postgresql
+  - type: redis
+    name: tawi-redis
+    plan: starter
+
+  - type: background-worker
+    name: tawi-celery-worker
+    env: python
+    plan: starter
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "celery -A tawi_project worker --loglevel=info"
+*** End Patch

@@ -1,0 +1,1 @@
+# Minimal events app initializer

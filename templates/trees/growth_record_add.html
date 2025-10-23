@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  {% load static %}
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Add Growth Record | Tawi Tree Planting Project</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/feather-icons"></script>
+  <style>
+    body {
+      background-image: url('{% static "img/tawi_forest_bg.jpg" %}');
+      background-size: cover;
+      background-position: center;
+      background-attachment: fixed;
+    }
+    .glass {
+      background: rgba(255,255,255,0.92);
+      backdrop-filter: blur(10px);
+      border:1px solid rgba(34,197,94,0.2);
+      border-radius:18px;
+      box-shadow:0 6px 20px rgba(34,197,94,0.12);
+    }
+    .input-label {
+      color: #16a34a;
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col items-center justify-start p-8">
+
+  <!-- Header -->
+  <header class="mb-6 text-center">
+  <img src="{% static 'img/tawi_logo.png' %}" alt="Tawi Logo" class="w-12 h-12 mx-auto rounded-full border border-green-300 mb-2" onerror="this.onerror=null;this.src='{% static 'img/tawi_leaf_logo.svg' %}';" />
+    <h1 class="text-2xl font-extrabold text-green-700">Add Growth Record</h1>
+    <p class="text-green-600 text-sm mt-1">Record the latest growth information of your trees 🌿</p>
+  </header>
+
+  <!-- Growth Record Form -->
+  <section class="glass w-full max-w-3xl p-6 space-y-6">
+    <form method="POST">
+      {% csrf_token %}
+
+      <div>
+        <label class="input-label block mb-1">Tree</label>
+        <select name="tree" required class="w-full px-3 py-2 rounded-md border border-green-200 focus:ring-2 focus:ring-green-400 text-green-700">
+          <option value="">-- Select Tree --</option>
+          {% for tree in trees %}
+          <option value="{{ tree.id }}">{{ tree.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div>
+        <label class="input-label block mb-1">Height (cm)</label>
+        <input type="number" name="height" placeholder="Enter height" required
+               class="w-full px-3 py-2 rounded-md border border-green-200 focus:ring-2 focus:ring-green-400 text-green-700">
+      </div>
+
+      <div>
+        <label class="input-label block mb-1">Health Status</label>
+        <select name="health_status" required class="w-full px-3 py-2 rounded-md border border-green-200 focus:ring-2 focus:ring-green-400 text-green-700">
+          <option value="">-- Select Status --</option>
+          <option value="Healthy">Healthy</option>
+          <option value="Diseased">Diseased</option>
+          <option value="Needs Attention">Needs Attention</option>
+        </select>
+      </div>
+
+      <div>
+        <label class="input-label block mb-1">Notes</label>
+        <textarea name="notes" rows="3" placeholder="Additional observations"
+                  class="w-full px-3 py-2 rounded-md border border-green-200 focus:ring-2 focus:ring-green-400 text-green-700"></textarea>
+      </div>
+
+      <div class="flex justify-end mt-4">
+        <button type="submit" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-md shadow flex items-center gap-2 transition">
+          <i data-feather="plus" class="w-4 h-4"></i> Add Record
+        </button>
+      </div>
+    </form>
+  </section>
+
+  <!-- Footer -->
+  <footer class="mt-6 text-center text-green-400 text-xs">
+    © 2025 Tawi Tree Planting Project | Growth Records
+  </footer>
+
+  <script>feather.replace();</script>
+</body>
+</html>
