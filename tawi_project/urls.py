@@ -70,7 +70,7 @@ urlpatterns = [
     path('volunteer-signup/', accounts_register, name='volunteer_sign_up'),
     path('profile/', accounts_profile, name='profile'),
     path('profile/edit/', accounts_profile_edit, name='profile_edit'),
-    path('', include('core.urls')),
+    path('', include(('core.urls', 'core'), namespace='core')),
     # Media app public gallery at top-level so templates can use reverse('media_list')
     path('media/', include('media_app.urls')),
     path('core/dashboard/', core_dashboard, name='core_dashboard'),
