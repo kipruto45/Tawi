@@ -29,7 +29,7 @@ services:
       env: python
       plan: starter
       buildCommand: "pip install -r requirements.txt && python manage.py collectstatic --noinput"
-      startCommand: "gunicorn tawi_project.wsgi:application --log-file - --workers 3"
+     startCommand: "gunicorn tawi_project.wsgi:application --bind 0.0.0.0:$PORT --log-file - --workers 3"
       envVars:
         - key: DJANGO_DEBUG
           value: "False"
