@@ -7,13 +7,11 @@ services:
     env: python
     plan: starter
     buildCommand: "pip install -r requirements.txt && python manage.py collectstatic --noinput"
-    startCommand: "gunicorn tawi_project.wsgi --log-file - --workers 3"
+    startCommand: "gunicorn tawi_project.wsgi:application --bind 0.0.0.0:$PORT --log-file - --workers 3"
     envVars:
       - key: DJANGO_DEBUG
         value: "False"
       - key: SECRET_KEY
-        scope: SECRET
-      - key: DATABASE_URL
         scope: SECRET
       - key: EMAIL_HOST
         scope: SECRET
@@ -23,42 +21,7 @@ services:
         scope: SECRET
       - key: STRIPE_SECRET_KEY
         scope: SECRET
-  services:
-    - type: web
-      name: tawi-web
-      env: python
-      plan: starter
-      buildCommand: "pip install -r requirements.txt && python manage.py collectstatic --noinput"
-     startCommand: "gunicorn tawi_project.wsgi:application --bind 0.0.0.0:$PORT --log-file - --workers 3"
-      envVars:
-        - key: DJANGO_DEBUG
-          value: "False"
-        - key: SECRET_KEY
-          scope: SECRET
-        - key: DATABASE_URL
-          scope: SECRET
-        - key: EMAIL_HOST
-          scope: SECRET
-        - key: EMAIL_HOST_USER
-          scope: SECRET
-        - key: EMAIL_HOST_PASSWORD
-          scope: SECRET
-        - key: STRIPE_SECRET_KEY
-          scope: SECRET
 
-    - type: database
-      name: tawi-db
-      plan: standard-0
-      database:
-        engine: postgresql
-
-    - type: redis
-      name: tawi-redis
-      plan: starter
-
-    - type: background-worker
-      name: tawi-celery-worker
-      env: python
-      plan: starter
-      buildCommand: "pip install -r requirements.txt"
-      startCommand: "celery -A tawi_project worker --loglevel=info"
+# NOTE: This config uses the repository-local SQLite database. This is suitable
+# for small, single-instance deployments or demos. For production, configure a
+# managed Postgres service and set DATABASE_URL accordingly.
