@@ -1,0 +1,19 @@
+HTTP/1.1 200 OK
+Date: Fri, 24 Oct 2025 14:10:02 GMT
+Content-Type: text/html; charset=utf-8
+Transfer-Encoding: chunked
+Connection: keep-alive
+CF-RAY: 993a0dde09b224f0-JNB
+cross-origin-opener-policy: same-origin
+referrer-policy: same-origin
+rndr-id: a10afe2b-19c8-498a
+strict-transport-security: max-age=60; includeSubDomains
+vary: Cookie, origin
+vary: Accept-Encoding
+x-content-type-options: nosniff
+x-frame-options: DENY
+x-render-origin-server: gunicorn
+cf-cache-status: DYNAMIC
+Server: cloudflare
+alt-svc: h3=":443"; ma=86400
+

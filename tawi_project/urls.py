@@ -122,6 +122,10 @@ urlpatterns = [
     path('qrcodes/generate/', fallback_views.qrcodes_generate_view, name='qrcodes_generate'),
     path('qrcodes/list/', fallback_views.qrcodes_list_view, name='qrcodes_list'),
     path('qrcodes/<int:pk>/', fallback_views.qrcodes_detail_view, name='qrcodes_detail'),
+    # Additional fallback aliases to satisfy legacy template reverses
+    path('qrcodes/<int:pk>/edit/', fallback_views.qrcodes_edit_view, name='qrcodes_edit'),
+    path('qrcodes/<int:pk>/delete/', fallback_views.qrcodes_delete_view, name='qrcodes_delete'),
+    path('qrcodes/history/', fallback_views.qrcode_history_view, name='qrcode_history'),
     path('reports/', include('reports.urls')),
     # Provide a simple non-namespaced alias used by some dashboard templates.
     # Templates refer to the name 'reports' so expose it here to avoid
@@ -130,6 +134,26 @@ urlpatterns = [
     # Top-level alias for template reverses used in dashboard templates
     path('my/tasks/', assigned_tasks, name='my_tasks'),
     # JWT token endpoints (optional; requires djangorestframework-simplejwt)
+]
+
+# Lightweight fallbacks for a small set of template names that are referenced
+# by archived/legacy templates but not implemented as full features. These
+# avoid NoReverseMatch when rendering templates in tests or when older UI
+# fragments are still present.
+urlpatterns += [
+    path('projects/list/', fallback_views.noop, name='project_list'),
+    path('projects/progress/', fallback_views.noop, name='project_progress'),
+    path('projects/volunteers/', fallback_views.noop, name='project_volunteers'),
+
+    path('contributions/<int:pk>/', fallback_views.noop, name='contribution_detail'),
+    path('contributions/<int:pk>/delete/', fallback_views.noop, name='contribution_delete'),
+
+    path('locations/<int:pk>/delete/', fallback_views.noop, name='delete_site'),
+    path('locations/<int:pk>/edit/', fallback_views.noop, name='edit_site'),
+
+    path('notifications/dropdown/', lambda r: __import__('django.shortcuts').shortcuts.render(r, 'notifications/notifications_dropdown.html', {'notifications': r.user.notifications.all() if r.user.is_authenticated else []}), name='notifications_dropdown'),
+    path('notifications/detail/<int:pk>/', notifications_views.notifications_page, name='notifications_detail'),
+    path('notifications/mark_read/<int:pk>/', notifications_views.notifications_mark, name='mark_read'),
 ]
 
 # If django-allauth is installed, include its URLs so the provider login endpoints
