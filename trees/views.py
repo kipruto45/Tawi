@@ -7,7 +7,6 @@ from django.db.models import Count
 from django.shortcuts import get_object_or_404
 import csv
 import io
-import openpyxl
 from django.core.files.uploadedfile import InMemoryUploadedFile
 
 
@@ -41,6 +40,12 @@ class TreeViewSet(viewsets.ModelViewSet):
                     for idx, r in enumerate(reader, start=1):
                         rows.append(r)
                 elif name.lower().endswith(('.xls', '.xlsx')):
+                    # delay importing openpyxl until actually needed so the
+                    # module is not required at import-time for the app to start.
+                    try:
+                        import openpyxl
+                    except Exception:
+                        return Response({'detail': 'openpyxl not available on server'}, status=status.HTTP_400_BAD_REQUEST)
                     wb = openpyxl.load_workbook(file)
                     ws = wb.active
                     headers = [c.value for c in next(ws.iter_rows(min_row=1,max_row=1))]
