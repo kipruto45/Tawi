@@ -15,7 +15,7 @@ try:
 except Exception:
     plt = None
 import tempfile
-import openpyxl
+from django.db import models
 from django.core.files.base import ContentFile
 from django.conf import settings
 from .permissions import IsReportOwnerOrAdmin
@@ -136,6 +136,12 @@ class GeneratedReportViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['post'], url_path='download_xlsx')
     def download_xlsx(self, request, pk=None):
         rpt = self.get_object()
+        # openpyxl is optional; import lazily so app can start without it
+        try:
+            import openpyxl
+        except Exception:
+            return Response({'detail': 'openpyxl not available on server'}, status=status.HTTP_400_BAD_REQUEST)
+
         wb = openpyxl.Workbook()
         ws = wb.active
         ws.title = 'Report'
