@@ -1,6 +1,15 @@
 import os
 from pathlib import Path
 
+# Load local .env early so development env vars like USE_ALLAUTH, GOOGLE_CLIENT_ID
+# and GOOGLE_SECRET are available during local runs. This is best-effort and
+# will not crash if python-dotenv isn't installed.
+try:
+    from dotenv import load_dotenv
+    load_dotenv(Path(__file__).resolve().parent.parent / '.env')
+except Exception:
+    pass
+
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = os.environ.get('SECRET_KEY', 'replace-me-in-production')
