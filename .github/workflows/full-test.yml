@@ -1,0 +1,47 @@
+name: Full Django test suite
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  full-tests:
+    runs-on: ubuntu-latest
+    env:
+      DJANGO_TEST_DB_NAME: 'test_tawi_db'
+      USE_2FA: '1'
+      DATABASE_URL: postgresql://postgres:${{ secrets.POSTGRES_PASSWORD }}@127.0.0.1:5432/tawi_db
+    services:
+      postgres:
+        image: postgres:13
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+          POSTGRES_DB: tawi_db
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 10s --health-timeout 5s --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt psycopg2-binary
+      - name: Wait for Postgres
+        run: |
+          until pg_isready -h 127.0.0.1 -p 5432; do sleep 1; done
+      - name: Run migrations
+        run: |
+          python manage.py migrate --noinput
+      - name: Run full test suite (parallel)
+        run: |
+          # Use a parallel test run; set --parallel to the number of cores you want.
+          python manage.py test -v 2 --parallel 4
