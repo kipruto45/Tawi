@@ -22,6 +22,7 @@ services:
       - key: STRIPE_SECRET_KEY
         scope: SECRET
 
-# NOTE: This config uses the repository-local SQLite database. This is suitable
-# for small, single-instance deployments or demos. For production, configure a
-# managed Postgres service and set DATABASE_URL accordingly.
+# NOTE: The repository now defaults to Postgres for parity with CI. For local
+# development Render/example configs should point DATABASE_URL at a Postgres
+# instance (managed Postgres or a self-hosted container) rather than a
+# repository-local SQLite file.

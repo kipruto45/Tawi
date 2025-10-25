@@ -5,6 +5,8 @@ from .views import role_management, guest_dashboard
 from .views import api_register, api_profile
 from .views import api_role_check, api_change_role
 from .views import post_login_redirect
+from django.conf import settings
+from django.urls import re_path
 
 urlpatterns = [
     path('register/', register, name='register'),
@@ -33,6 +35,16 @@ urlpatterns = [
     path('api/change_role/', api_change_role, name='api_change_role'),
     path('post-login/', post_login_redirect, name='post_login_redirect'),
 ]
+
+# If django-two-factor-auth is installed and USE_2FA is enabled, the
+# two_factor package exposes an alternate login flow at /account/login/ and
+# related setup endpoints. We purposely do NOT replace the existing
+# `accounts:login` route here to avoid surprising changes to URL resolution
+# (many tests and templates rely on the non-2FA login behavior). To enable
+# the two-factor login flow, users can visit the namespaced two_factor URL
+# (mounted under /account/). Keeping the default `accounts:login` mapping
+# stable prevents the ManagementForm tampering errors in tests that perform
+# direct POSTs to the login view.
 
 # Define the application namespace so reversing 'accounts:...' works reliably
 app_name = 'accounts'

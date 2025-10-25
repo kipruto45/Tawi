@@ -1,5 +1,6 @@
 from django.contrib import admin
 from django.urls import path, include
+from django.conf import settings
 from django.contrib.auth import views as auth_views
 from rest_framework import routers
 from accounts.views import UserViewSet
@@ -171,4 +172,24 @@ if TokenObtainPairView and TokenRefreshView:
         path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
         path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     ]
+
+# Optional two-factor authentication support
+# Only mount the two_factor URL patterns when USE_2FA is explicitly enabled
+# via settings. This avoids introducing similarly-named routes (for example
+# a top-level 'login' name) into the global URL namespace during tests or
+# when the feature is not enabled.
+if getattr(settings, 'USE_2FA', False):
+    try:
+        import importlib.util
+        if importlib.util.find_spec('two_factor') is not None:
+            # Include two_factor urls under the 'two_factor' namespace to avoid
+            # clobbering globally-named URL patterns (for example 'login') which
+            # could change the behavior of existing tests and templates that
+            # expect the non-2FA login endpoint. Using include with a namespace
+            # keeps the two-factor names scoped and prevents reverse('login')
+            # from resolving to the two-factor login unless explicitly namespaced.
+            urlpatterns += [path('', include('two_factor.urls', namespace='two_factor'))]
+    except Exception:
+        # two_factor not installed or not configured; continue without 2FA routes
+        pass
 
