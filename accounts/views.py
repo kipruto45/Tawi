@@ -45,6 +45,13 @@ class UserViewSet(viewsets.ModelViewSet):
 
 
 def register(request):
+    # Determine an initial role (if provided) in a safe way so templates
+    # don't index into request.GET/POST directly (that raises on missing keys).
+    try:
+        initial_role = request.POST.get('role') or request.GET.get('role')
+    except Exception:
+        initial_role = None
+
     if request.method == 'POST':
         form = UserRegisterForm(request.POST)
         pform = ProfileForm(request.POST, request.FILES)
@@ -135,7 +142,7 @@ def register(request):
     else:
         form = UserRegisterForm()
         pform = ProfileForm()
-    return render(request, 'accounts/register.html', {'form': form, 'pform': pform})
+    return render(request, 'accounts/register.html', {'form': form, 'pform': pform, 'initial_role': initial_role})
 
 @login_required
 def profile_view(request):
@@ -269,6 +276,22 @@ class CustomLoginView(DjangoLoginView):
     - If 'role' is provided it redirects to a role-specific dashboard name when possible.
     """
     template_name = 'accounts/login.html'
+
+    def get_context_data(self, **kwargs):
+        """Add a safe 'initial_role' value to the template context.
+
+        We compute this server-side using QueryDict.get() so templates don't
+        attempt to index into request.GET/POST directly (which raises
+        MultiValueDictKeyError when the key is missing).
+        """
+        ctx = super().get_context_data(**kwargs)
+        role = None
+        try:
+            role = self.request.GET.get('role') or self.request.POST.get('role')
+        except Exception:
+            role = None
+        ctx['initial_role'] = role
+        return ctx
 
     def form_valid(self, form):
         # apply remember-me behavior
