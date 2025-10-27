@@ -1,5 +1,8 @@
 from django.urls import path
 from . import views
+
+# Application namespace used by templates and `include(..., namespace=...)`
+app_name = 'dashboard'
 from .api_views import (
     DashboardSummaryAPIView,
     DashboardTrendsAPIView,

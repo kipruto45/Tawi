@@ -52,7 +52,9 @@ urlpatterns = [
     path('api/notifications/', include('notifications.urls')),
     path('api/reports/', include('reports.urls')),
     path('api/reports/summary/', summary_stats, name='reports-summary'),
-    path('dashboard/', include('dashboard.urls')),
+    # Include the dashboard app with an explicit namespace so templates
+    # that use the 'dashboard:' namespaced reverses resolve correctly.
+    path('dashboard/', include(('dashboard.urls', 'dashboard'), namespace='dashboard')),
     # Events app (public listing for guests)
     path('events/', include(('events.urls', 'events'), namespace='events')),
     # Top-level aliases used by templates (non-namespaced)
