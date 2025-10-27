@@ -1,6 +1,5 @@
 Django>=4.2
 djangorestframework
-psycopg2-binary
 gunicorn
 dj-database-url
 python-dotenv
@@ -8,9 +7,7 @@ whitenoise
 stripe
 django-cors-headers
 Pillow
-django-cors-headers
 django-filter
-python-dotenv
 qrcode
 django-redis
 djangorestframework-simplejwt
@@ -26,12 +23,10 @@ dj-rest-auth
 django-axes
 django-otp
 django-two-factor-auth
-social-auth-app-django
+django-two-factor-auth==1.18.1
 requests
+django-otp==1.6.2
+pyotp==2.9.0
 cryptography
 google-auth
 google-auth-oauthlib
-stripe
-gunicorn
-whitenoise
-dj-database-url

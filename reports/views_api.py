@@ -7,15 +7,18 @@ from .serializers import GeneratedReportSerializer, CreateReportSerializer
 from django.utils import timezone
 import json
 import io
-from reportlab.lib.pagesizes import A4
-from reportlab.pdfgen import canvas
-from reportlab.lib.utils import ImageReader
+try:
+    # reportlab is optional for PDF generation; import lazily below.
+    # Keep a sentinel here in case environments have reportlab installed.
+    from reportlab.lib.utils import ImageReader  # type: ignore
+except Exception:
+    ImageReader = None  # noqa: F821
 try:
     import matplotlib.pyplot as plt
 except Exception:
     plt = None
 import tempfile
-import openpyxl
+from django.db import models
 from django.core.files.base import ContentFile
 from django.conf import settings
 from .permissions import IsReportOwnerOrAdmin
@@ -62,6 +65,19 @@ class GeneratedReportViewSet(viewsets.ModelViewSet):
     def download_pdf(self, request, pk=None):
         rpt = self.get_object()
         # Generate a branded PDF with embedded charts using matplotlib + ReportLab
+        # Lazy-import reportlab so the app can start without it installed.
+        try:
+            from reportlab.lib.pagesizes import A4  # type: ignore
+            from reportlab.pdfgen import canvas  # type: ignore
+            # ImageReader may have been set at module-import time; prefer the imported one
+            if ImageReader is None:
+                from reportlab.lib.utils import ImageReader as _ImageReader  # type: ignore
+                ImageReaderLocal = _ImageReader
+            else:
+                ImageReaderLocal = ImageReader
+        except Exception:
+            return Response({'detail': 'reportlab is not available on server'}, status=status.HTTP_400_BAD_REQUEST)
+
         buffer = io.BytesIO()
         p = canvas.Canvas(buffer, pagesize=A4)
 
@@ -94,7 +110,7 @@ class GeneratedReportViewSet(viewsets.ModelViewSet):
 
         # Create matplotlib figure if we have numeric chart_data
         img_reader = None
-        if chart_data and isinstance(chart_data, dict) and plt:
+        if chart_data and isinstance(chart_data, dict) and plt and ImageReaderLocal:
             labels = list(chart_data.keys())[:6]
             values = [float(chart_data[k]) for k in labels]
             fig, ax = plt.subplots(figsize=(4, 3))
@@ -103,7 +119,10 @@ class GeneratedReportViewSet(viewsets.ModelViewSet):
             tmp = tempfile.NamedTemporaryFile(suffix='.png', delete=False)
             fig.savefig(tmp.name, bbox_inches='tight', dpi=150)
             plt.close(fig)
-            img_reader = ImageReader(tmp.name)
+            try:
+                img_reader = ImageReaderLocal(tmp.name)
+            except Exception:
+                img_reader = None
 
         # Place chart on page if present
         y = 740
@@ -136,6 +155,12 @@ class GeneratedReportViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['post'], url_path='download_xlsx')
     def download_xlsx(self, request, pk=None):
         rpt = self.get_object()
+        # openpyxl is optional; import lazily so app can start without it
+        try:
+            import openpyxl
+        except Exception:
+            return Response({'detail': 'openpyxl not available on server'}, status=status.HTTP_400_BAD_REQUEST)
+
         wb = openpyxl.Workbook()
         ws = wb.active
         ws.title = 'Report'

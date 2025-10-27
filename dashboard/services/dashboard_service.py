@@ -1,11 +1,17 @@
-from datetime import date
-from collections import defaultdict
 from typing import Dict, List, Any
-from django.db.models import Count, Sum
+from django.db.models import Sum
 from django.db.models.functions import TruncMonth
-from trees.models import Tree, TreeSpecies
-from beneficiaries.models import PlantingSite, Beneficiary
-from monitoring.models import FollowUp
+from django.db import OperationalError
+
+try:
+    from trees.models import Tree
+    from beneficiaries.models import PlantingSite, Beneficiary
+except Exception:
+    # If migrations haven't run or apps are missing, importing models will fail.
+    # Defer raising and handle OperationalError in query execution below.
+    Tree = None
+    PlantingSite = None
+    Beneficiary = None
 
 
 def _month_label(d):
@@ -19,6 +25,20 @@ def get_dashboard_summary(user=None) -> Dict[str, Any]:
     monthly_trends, species_distribution, top_regions.
     Applies simple role-based filtering when `user` is provided (field officers see their county).
     """
+    # If Tree model isn't available (e.g. migrations not applied), return safe defaults.
+    if Tree is None:
+        return {
+            'total_trees': 0,
+            'alive': 0,
+            'dead': 0,
+            'avg_survival_rate': 0.0,
+            'total_sites': 0,
+            'total_beneficiaries': 0,
+            'monthly_trends': [],
+            'species_distribution': [],
+            'top_regions': [],
+        }
+
     qs = Tree.objects.select_related('species', 'beneficiary')
 
     # role-based filtering (simple): if user is field_officer, filter by profile.county
@@ -27,7 +47,21 @@ def get_dashboard_summary(user=None) -> Dict[str, Any]:
         if county:
             qs = qs.filter(beneficiary__address__icontains=county)
 
-    total_trees = qs.aggregate(total=Sum('number_of_seedlings'))['total'] or 0
+    try:
+        total_trees = qs.aggregate(total=Sum('number_of_seedlings'))['total'] or 0
+    except OperationalError:
+        # Database schema not ready; return safe defaults so dashboard views don't 500.
+        return {
+            'total_trees': 0,
+            'alive': 0,
+            'dead': 0,
+            'avg_survival_rate': 0.0,
+            'total_sites': 0,
+            'total_beneficiaries': 0,
+            'monthly_trends': [],
+            'species_distribution': [],
+            'top_regions': [],
+        }
 
     # survival from latest TreeUpdate status if available, otherwise tree.status
     alive = qs.filter(status='alive').aggregate(total=Sum('number_of_seedlings'))['total'] or 0
@@ -36,8 +70,14 @@ def get_dashboard_summary(user=None) -> Dict[str, Any]:
     if total_trees:
         avg_survival_rate = round((alive / total_trees) * 100, 2)
 
-    total_sites = PlantingSite.objects.count()
-    total_beneficiaries = Beneficiary.objects.count()
+    try:
+        total_sites = PlantingSite.objects.count() if PlantingSite is not None else 0
+    except OperationalError:
+        total_sites = 0
+    try:
+        total_beneficiaries = Beneficiary.objects.count() if Beneficiary is not None else 0
+    except OperationalError:
+        total_beneficiaries = 0
 
     # monthly planting trends (last 12 months)
     trends_qs = (

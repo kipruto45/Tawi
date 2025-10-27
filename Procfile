@@ -1,1 +1,1 @@
-web: gunicorn tawi_project.wsgi --log-file - --workers 3
+web: gunicorn tawi_project.wsgi:application --bind 0.0.0.0:$PORT --log-file - --workers 3

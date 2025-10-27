@@ -1,6 +1,21 @@
 from rest_framework import viewsets, permissions
 from .models import User
 from .serializers import UserSerializer
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib.auth.decorators import login_required
+from .forms import UserRegisterForm, ProfileForm
+from .models import Profile
+from django.db import IntegrityError
+from django.contrib.auth.views import LoginView as DjangoLoginView
+from django.conf import settings
+from django.urls import NoReverseMatch, reverse
+from django.contrib.auth.models import Group
+import logging
+from django.contrib import messages
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.response import Response
+from .serializers import RegisterSerializer, ProfileSerializer
+from django.contrib.auth import get_user_model
 
 
 class IsAdminOrReadOnly(permissions.BasePermission):
@@ -11,24 +26,32 @@ class IsAdminOrReadOnly(permissions.BasePermission):
 
 
 class UserViewSet(viewsets.ModelViewSet):
-    queryset = User.objects.all()
+    # DRF router expects a `queryset` attribute to infer a basename. Use
+    # `.none()` here to avoid import-time DB access while keeping the
+    # attribute present. Actual queryset is provided by get_queryset().
+    queryset = User.objects.none()
     serializer_class = UserSerializer
     permission_classes = [IsAdminOrReadOnly]
 
-from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth.decorators import login_required
-from django.contrib.auth import login, authenticate
-from .forms import UserRegisterForm, ProfileForm
-from .models import Profile
-from django.db import IntegrityError
-from django.contrib.auth.views import LoginView as DjangoLoginView
-from django.conf import settings
-from django.urls import NoReverseMatch, reverse
-from django.contrib.auth.models import Group
-import logging
-from django.contrib import messages
+    def get_queryset(self):
+        """Return queryset lazily to avoid creating QuerySet at import time.
+
+        Creating QuerySet objects at module import can accidentally cause
+        database access during app import (e.g. in migrations/tests). By
+        returning the queryset from get_queryset we ensure it is only
+        evaluated when the view is actually used.
+        """
+        return User.objects.all()
+
 
 def register(request):
+    # Determine an initial role (if provided) in a safe way so templates
+    # don't index into request.GET/POST directly (that raises on missing keys).
+    try:
+        initial_role = request.POST.get('role') or request.GET.get('role')
+    except Exception:
+        initial_role = None
+
     if request.method == 'POST':
         form = UserRegisterForm(request.POST)
         pform = ProfileForm(request.POST, request.FILES)
@@ -74,7 +97,23 @@ def register(request):
                     messages.success(request, 'Registration complete. Please sign in.')
                 except Exception:
                     pass
-            return redirect('login')
+            # After successful registration, redirect to the login page and
+            # include a query param so the login page can show a success
+            # message and pre-select the assigned role in the login form.
+            try:
+                login_url = reverse('accounts:login')
+            except Exception:
+                # fallback to non-namespaced name if reverse fails
+                try:
+                    login_url = reverse('login')
+                except Exception:
+                    login_url = '/accounts/login/'
+
+            try:
+                # include role in the querystring so the login page can pre-select it
+                return redirect(f"{login_url}?registered=1&role={user.role}")
+            except Exception:
+                return redirect(login_url)
         else:
             # Collect errors from both forms and add them to messages so the
             # template (which renders messages) can display them prominently.
@@ -103,7 +142,7 @@ def register(request):
     else:
         form = UserRegisterForm()
         pform = ProfileForm()
-    return render(request, 'accounts/register.html', {'form': form, 'pform': pform})
+    return render(request, 'accounts/register.html', {'form': form, 'pform': pform, 'initial_role': initial_role})
 
 @login_required
 def profile_view(request):
@@ -145,7 +184,6 @@ def user_detail(request, pk):
     return render(request, 'accounts/user_detail.html', {'user_obj': user})
 
 def role_management(request):
-    from django.contrib.auth.models import Group
     groups = Group.objects.all()
     # Only staff users should be able to change roles via this view
     if request.method == 'POST':
@@ -239,6 +277,22 @@ class CustomLoginView(DjangoLoginView):
     """
     template_name = 'accounts/login.html'
 
+    def get_context_data(self, **kwargs):
+        """Add a safe 'initial_role' value to the template context.
+
+        We compute this server-side using QueryDict.get() so templates don't
+        attempt to index into request.GET/POST directly (which raises
+        MultiValueDictKeyError when the key is missing).
+        """
+        ctx = super().get_context_data(**kwargs)
+        role = None
+        try:
+            role = self.request.GET.get('role') or self.request.POST.get('role')
+        except Exception:
+            role = None
+        ctx['initial_role'] = role
+        return ctx
+
     def form_valid(self, form):
         # apply remember-me behavior
         remember = self.request.POST.get('remember')
@@ -267,21 +321,27 @@ class CustomLoginView(DjangoLoginView):
 
         # role-based redirect based on authenticated user.role
         # account model stores roles like 'admin', 'field_officer', 'volunteer', 'beneficiary'
+        # Normalize legacy alias keys to canonical keys before mapping so stored
+        # values like 'field' or 'partner_institution' still resolve correctly.
         user_role = getattr(self.request.user, 'role', None)
+        alias_map = {
+            'field': 'field_officer',
+            'partner_institution': 'partner',
+        }
+        norm_role = alias_map.get(user_role, user_role)
+
         role_map = {
             'admin': 'admin_dashboard',
             'field_officer': 'dashboard_field',
-            'field': 'dashboard_field',
             'volunteer': 'dashboard_volunteer',
             'beneficiary': 'dashboard',
-            # additional mappings
+            # canonical partner key
             'partner': 'dashboard_partner',
-            'partner_institution': 'dashboard_partner',
             'guest': 'dashboard_guest',
             'community': 'dashboard_community',
             'project_manager': 'dashboard_project',
         }
-        target = role_map.get(user_role)
+        target = role_map.get(norm_role)
 
         # initialize logger
         logger = logging.getLogger('accounts.login')
@@ -355,20 +415,24 @@ def post_login_redirect(request):
         return redirect('dashboard')
 
     user_role = getattr(request.user, 'role', None)
+    alias_map = {
+        'field': 'field_officer',
+        'partner_institution': 'partner',
+    }
+    norm_role = alias_map.get(user_role, user_role)
+
     role_map = {
         'admin': 'admin_dashboard',
         'field_officer': 'dashboard_field',
-        'field': 'dashboard_field',
         'volunteer': 'dashboard_volunteer',
         'beneficiary': 'dashboard',
         'partner': 'dashboard_partner',
-        'partner_institution': 'dashboard_partner',
         'guest': 'dashboard_guest',
         'community': 'dashboard_community',
         'project_manager': 'dashboard_project',
     }
 
-    target = role_map.get(user_role)
+    target = role_map.get(norm_role)
 
     # Fallback permission/group checks (keep in sync with CustomLoginView)
     try:
@@ -406,15 +470,6 @@ def post_login_redirect(request):
     except NoReverseMatch:
         return redirect('dashboard')
 
-# API views
-from rest_framework.decorators import api_view, permission_classes
-from rest_framework.response import Response
-from .serializers import RegisterSerializer, ProfileSerializer
-from django.contrib.auth import get_user_model
-import logging
-import json
-
-
 @api_view(['POST'])
 @permission_classes([permissions.AllowAny])
 def api_register(request):
@@ -427,7 +482,20 @@ def api_register(request):
 @api_view(['GET', 'PUT'])
 @permission_classes([permissions.IsAuthenticated])
 def api_profile(request):
-    profile = request.user.profile
+    # Ensure a Profile exists for the authenticated user; create lazily if missing.
+    try:
+        profile = getattr(request.user, 'profile', None)
+    except Exception:
+        profile = None
+
+    if profile is None:
+        try:
+            from .models import Profile
+            profile, _ = Profile.objects.get_or_create(user=request.user)
+        except Exception:
+            # If creation fails for any reason, return a safe empty response
+            return Response({'detail': 'profile unavailable'}, status=503)
+
     if request.method == 'GET':
         return Response(ProfileSerializer(profile).data)
     else:
@@ -468,7 +536,18 @@ def api_role_check(request):
             return Response({'exists': False, 'matches': False, 'user_role': None})
 
     user_role = getattr(user, 'role', None)
-    matches = (user_role == role)
+    # Normalize legacy aliases to canonical role keys before comparing.
+    alias_map = {
+        'admin': 'admin',
+        'field': 'field_officer',
+        'partner_institution': 'partner',
+        'project_manager': 'project_manager',
+        'volunteer': 'volunteer',
+        'guest': 'guest',
+    }
+    norm_user_role = alias_map.get(user_role, user_role)
+    norm_role = alias_map.get(role, role)
+    matches = (norm_user_role == norm_role)
     return Response({'exists': True, 'matches': matches, 'user_role': user_role})
 
 
@@ -487,14 +566,11 @@ def api_change_role(request):
     except UserModel.DoesNotExist:
         return Response({'detail': 'user not found'}, status=404)
 
-    # validate role against model choices if available
-    allowed = None
-    try:
-        allowed = [c[0] for c in UserModel.ROLE_CHOICES]
-    except Exception:
-        allowed = None
+    # validate role against canonical choices if available (prefer CANONICAL_ROLES)
+    choices = getattr(UserModel, 'CANONICAL_ROLES', None) or getattr(UserModel, 'ROLE_CHOICES', [])
+    allowed = [c[0] for c in choices]
 
-    if allowed is not None and new_role not in allowed:
+    if new_role not in allowed:
         return Response({'detail': 'invalid role'}, status=400)
 
     old_role = getattr(user, 'role', None)

@@ -83,12 +83,12 @@
             <td class="px-4 py-2 text-green-600">{{ user.email }}</td>
             <td class="px-4 py-2">
               <span class="text-xs font-semibold px-2 py-1 rounded-full 
-                           {% if user.profile.role == 'Admin' %}bg-green-600 text-white
-                           {% elif user.profile.role == 'Field Officer' %}bg-green-200 text-green-800
-                           {% elif user.profile.role == 'Partner Institution' %}bg-green-100 text-green-700
-                           {% elif user.profile.role == 'Volunteer' %}bg-emerald-50 text-emerald-800
+                           {% if user.role == 'admin' %}bg-green-600 text-white
+                           {% elif user.role == 'field_officer' %}bg-green-200 text-green-800
+                           {% elif user.role == 'partner' %}bg-green-100 text-green-700
+                           {% elif user.role == 'volunteer' %}bg-emerald-50 text-emerald-800
                            {% else %}bg-gray-100 text-green-600{% endif %}">
-                {{ user.profile.role }}
+                {{ user.get_role_display }}
               </span>
             </td>
             <td class="px-4 py-2 text-green-500 text-xs">{{ user.date_joined|date:"M d, Y" }}</td>

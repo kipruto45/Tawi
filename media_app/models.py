@@ -4,7 +4,14 @@ from django.utils import timezone
 from beneficiaries.models import PlantingSite
 from trees.models import Tree
 from io import BytesIO
-from PIL import Image, ExifTags
+try:
+    # Pillow is optional for image processing; import locally in _process_image to
+    # avoid import-time failures when Pillow is not installed on the host.
+    Image = None
+    ExifTags = None
+except Exception:
+    Image = None
+    ExifTags = None
 from django.core.files.base import ContentFile
 import os
 
@@ -69,12 +76,18 @@ class Media(models.Model):
     def _process_image(self):
         # open image and reduce size if large
         self.file.open()
-        img = Image.open(self.file)
+        try:
+            # Import Pillow locally; if unavailable, skip processing gracefully.
+            from PIL import Image as _Image, ExifTags as _ExifTags
+        except Exception:
+            return
+
+        img = _Image.open(self.file)
         try:
             exif = {
-                ExifTags.TAGS.get(k): v
+                _ExifTags.TAGS.get(k): v
                 for k, v in img._getexif().items()
-                if k in ExifTags.TAGS
+                if k in _ExifTags.TAGS
             }
         except Exception:
             exif = {}
@@ -107,7 +120,7 @@ class Media(models.Model):
         w, h = img.size
         if max(w, h) > max_size:
             ratio = max_size / float(max(w, h))
-            img = img.resize((int(w*ratio), int(h*ratio)), Image.LANCZOS)
+            img = img.resize((int(w*ratio), int(h*ratio)), _Image.LANCZOS)
 
         img.save(buf, format='JPEG', quality=85)
         fname = os.path.basename(self.file.name)
@@ -121,7 +134,7 @@ class Media(models.Model):
             tw, th = img.size
             if max(tw, th) > thumb_max:
                 tr = thumb_max / float(max(tw, th))
-                thumb = img.resize((int(tw*tr), int(th*tr)), Image.LANCZOS)
+                thumb = img.resize((int(tw*tr), int(th*tr)), _Image.LANCZOS)
             else:
                 thumb = img.copy()
             thumb.save(thumb_buf, format='JPEG', quality=75)

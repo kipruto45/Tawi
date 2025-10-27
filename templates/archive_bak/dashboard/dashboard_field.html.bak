@@ -1,0 +1,232 @@
+<!-- dashboard_field_officer.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  {% load static %}
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Field Officer Dashboard | Tawi Tree Planting Project</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/feather-icons"></script>
+  <style>
+    /* Remove large background images for dashboards; use neutral color */
+    body { background-color: #f8faf5; }
+    .glass { background: rgba(255,255,255,0.92); backdrop-filter: blur(10px); border:1px solid rgba(34,197,94,0.2); border-radius:18px; box-shadow:0 6px 20px rgba(34,197,94,0.12);}
+    .sidebar-link {display:flex;align-items:center;gap:8px;padding:0.6rem 1rem;border-radius:8px;font-size:0.9rem;transition:all 0.2s ease-in-out;}
+    .sidebar-link:hover, .active {background:linear-gradient(to right,#22c55e,#16a34a);color:white !important;box-shadow:0 2px 6px rgba(34,197,94,0.2);}
+  </style>
+</head>
+<body class="min-h-screen flex bg-green-50/70 relative">
+
+  <!-- Sidebar -->
+  <aside data-sidebar="true" class="w-64 glass h-screen p-5 flex flex-col justify-between fixed left-0 top-0 -translate-x-full md:translate-x-0 transition-transform z-20" aria-hidden="true">
+    <div>
+      <div class="flex items-center gap-2 mb-8">
+  <img src="{% static 'img/tawi_logo.png' %}" alt="Tawi Logo" class="w-10 h-10 rounded-full border border-green-300" onerror="this.onerror=null;this.src='{% static 'img/tawi_leaf_logo.svg' %}';" />
+        <span class="font-bold text-green-700 text-lg">Field Officer</span>
+      </div>
+      <nav class="space-y-1 text-green-700 font-medium">
+        <a href="{% url 'dashboard_field_officer' %}" class="sidebar-link active"><i data-feather="home" class="w-4 h-4"></i> Dashboard</a>
+        <a href="{% url 'assigned_tasks' %}" class="sidebar-link"><i data-feather="list" class="w-4 h-4"></i> Tasks</a>
+        <a href="{% url 'volunteers_list' %}" class="sidebar-link"><i data-feather="users" class="w-4 h-4"></i> Volunteers</a>
+  <a href="{% url 'reports' %}" class="sidebar-link"><i data-feather="bar-chart-2" class="w-4 h-4"></i> Reports</a>
+  {% include 'includes/sidebar_feedback_link.html' %}
+  <a href="{% url 'logout' %}" class="sidebar-link text-red-600 hover:bg-red-100 hover:text-red-700"><i data-feather="log-out" class="w-4 h-4"></i> Logout</a>
+      </nav>
+    </div>
+    <div class="mt-6 border-t pt-4" id="my-profile-block">
+      <div class="flex items-center justify-between">
+        <h3 class="text-xs text-green-500 uppercase tracking-wide mb-2">My Profile</h3>
+        <button id="profile-toggle" class="md:hidden p-1 text-green-600" aria-controls="profile-links" aria-expanded="false" aria-label="Toggle profile links">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+        </button>
+      </div>
+      <div id="profile-links" class="space-y-1 hidden md:block">
+  <a href="{% url 'accounts:profile' %}" class="sidebar-link"><i data-feather="user" class="w-4 h-4"></i> View Profile</a>
+  <a href="{% url 'accounts:profile_edit' %}" class="sidebar-link"><i data-feather="edit-2" class="w-4 h-4"></i> Edit Profile</a>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <main class="flex-1 ml-0 md:ml-64 p-8 relative z-10">
+    <header class="flex justify-between items-center mb-8">
+      <h1 class="text-2xl font-extrabold text-green-700">Field Officer Dashboard</h1>
+      <div class="flex items-center gap-4">
+        <div class="ml-4 text-right">
+          {% if request.user.is_authenticated %}
+            <p class="text-sm text-green-600">Welcome back, <span class="font-semibold text-green-800">{{ request.user.get_full_name|default:request.user.username }}</span></p>
+            {% if request.user.profile.role %}
+              <p class="text-xs text-green-500">Role: <span class="font-medium">{{ request.user.profile.role }}</span></p>
+            {% endif %}
+          {% else %}
+            <p class="text-sm text-green-600">Welcome, Guest</p>
+            <p class="text-xs text-green-500">Please <a href="{% url 'accounts:login' %}" class="underline">log in</a> to personalize your dashboard.</p>
+          {% endif %}
+        </div>
+        <div class="flex items-center gap-2 text-green-700 font-medium bg-green-50 px-3 py-1 rounded-md shadow-sm">
+          <i data-feather="user" class="w-4 h-4 text-green-600"></i> {{ request.user.username }}
+        </div>
+      </div>
+      <div class="ml-auto flex items-center gap-3">
+          <div class="relative" id="notif-dropdown-root">
+            <button id="notif-toggle" class="relative p-2 rounded-md hover:bg-green-50" aria-haspopup="true" aria-expanded="false" aria-label="Notifications">
+              <i data-feather="bell" class="w-5 h-5 text-green-700"></i>
+              {% if unread_notifications_count and unread_notifications_count|int > 0 %}
+              <span id="notif-badge" class="absolute -top-1 -right-1 inline-flex items-center justify-center px-1.5 py-0.5 text-xs font-bold leading-none text-white bg-red-600 rounded-full" aria-hidden="true">{{ unread_notifications_count }}</span>
+              {% endif %}
+            </button>
+
+            <div id="notif-dropdown" class="hidden absolute right-0 mt-2 w-80 bg-white border border-green-100 rounded-md shadow-lg z-50">
+              <div class="p-3 border-b text-sm text-green-700 font-semibold">Notifications</div>
+              <div class="max-h-64 overflow-y-auto" id="notif-list">
+                {% if notifications_preview %}
+                  {% for n in notifications_preview %}
+                  <div class="p-3 border-b hover:bg-green-50 flex justify-between items-start notif-row" data-notif-id="{{ n.id }}">
+                    <div>
+                      <div class="text-green-800 text-sm font-medium">{{ n.verb }}</div>
+                      <div class="text-green-600 text-xs">{{ n.description }}</div>
+                      <div class="text-green-400 text-[10px] mt-1">{{ n.created_at|date:"M d, Y H:i" }}</div>
+                    </div>
+                    {% if n.unread %}
+                    <button class="mark-read-btn text-xs text-green-600 hover:text-green-800 ml-3" data-id="{{ n.id }}">Mark</button>
+                    {% endif %}
+                  </div>
+                  {% endfor %}
+                {% else %}
+                  <div class="p-3 text-green-600">No notifications</div>
+                {% endif %}
+              </div>
+              <div class="p-2 text-center">
+                <a href="{% url 'notifications_page' %}" class="text-sm text-green-700 hover:underline">View all</a>
+              </div>
+            </div>
+          </div>
+        <a href="{% url 'message_list' %}" class="p-2 rounded-md hover:bg-green-50" aria-label="Messages">
+          <i data-feather="mail" class="w-5 h-5 text-green-700"></i>
+        </a>
+        {% if request.user.is_authenticated %}
+          {% with role=request.user.profile.role|default_if_none:"" %}
+            {% if role == 'admin' %}
+              <a href="{% url 'dashboard_admin' %}" class="flex items-center gap-2 p-2 rounded-md hover:bg-green-50" aria-label="Profile">
+            {% elif role == 'field' or role == 'field_officer' %}
+              <a href="{% url 'dashboard_field' %}" class="flex items-center gap-2 p-2 rounded-md hover:bg-green-50" aria-label="Profile">
+            {% elif role == 'partner' %}
+              <a href="{% url 'dashboard_partner' %}" class="flex items-center gap-2 p-2 rounded-md hover:bg-green-50" aria-label="Profile">
+            {% elif role == 'community' %}
+              <a href="{% url 'dashboard_community' %}" class="flex items-center gap-2 p-2 rounded-md hover:bg-green-50" aria-label="Profile">
+            {% else %}
+              <a href="{% url 'accounts:profile' %}" class="flex items-center gap-2 p-2 rounded-md hover:bg-green-50" aria-label="Profile">
+            {% endif %}
+          {% endwith %}
+        {% else %}
+          <a href="{% url 'accounts:profile' %}" class="flex items-center gap-2 p-2 rounded-md hover:bg-green-50" aria-label="Profile">
+        {% endif %}
+          {% if request.user.profile.profile_image %}
+          <img src="{{ request.user.profile.profile_image.url }}" alt="Profile" class="w-6 h-6 rounded-full object-cover" />
+          {% else %}
+          <img src="{% static 'img/default_profile.png' %}" alt="Profile" class="w-6 h-6 rounded-full object-cover" />
+          {% endif %}
+          <span class="sr-only">Open profile</span>
+  </a>
+      </div>
+    </header>
+
+    <!-- Stats -->
+    <section class="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <div class="glass p-5 flex flex-col items-start"><i data-feather="tree" class="w-6 h-6 text-green-600 mb-2"></i><h2 class="text-2xl font-bold text-green-700">{{ assigned_trees }}</h2><p class="text-sm text-green-600">Trees Assigned</p></div>
+      <div class="glass p-5 flex flex-col items-start"><i data-feather="users" class="w-6 h-6 text-green-600 mb-2"></i><h2 class="text-2xl font-bold text-green-700">{{ volunteers }}</h2><p class="text-sm text-green-600">Volunteers Under You</p></div>
+      <div class="glass p-5 flex flex-col items-start"><i data-feather="map-pin" class="w-6 h-6 text-green-600 mb-2"></i><h2 class="text-2xl font-bold text-green-700">{{ locations }}</h2><p class="text-sm text-green-600">Planting Locations</p></div>
+      <div class="glass p-5 flex flex-col items-start"><i data-feather="check-circle" class="w-6 h-6 text-green-600 mb-2"></i><h2 class="text-2xl font-bold text-green-700">{{ completed_activities }}</h2><p class="text-sm text-green-600">Completed Activities</p></div>
+    </section>
+
+    <!-- Recent Tasks -->
+    <section class="glass p-6">
+      <h2 class="text-green-700 font-semibold mb-4 flex items-center gap-2"><i data-feather="activity" class="w-5 h-5 text-green-600"></i> Recent Assignments</h2>
+      <div class="overflow-x-auto">
+        <table class="min-w-full text-sm text-left">
+          <thead class="bg-green-100 text-green-700 uppercase text-xs">
+            <tr><th class="px-4 py-2">#</th><th class="px-4 py-2">Task</th><th class="px-4 py-2">Location</th><th class="px-4 py-2">Status</th><th class="px-4 py-2">Deadline</th></tr>
+          </thead>
+          <tbody>
+            {% for task in tasks %}
+            <tr class="border-t border-green-100 hover:bg-green-50 transition">
+              <td class="px-4 py-2">{{ forloop.counter }}</td>
+              <td class="px-4 py-2">{{ task.name }}</td>
+              <td class="px-4 py-2">{{ task.location }}</td>
+              <td class="px-4 py-2 text-green-700">{{ task.status }}</td>
+              <td class="px-4 py-2 text-green-600 text-xs">{{ task.deadline|date:"M d, Y" }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="5" class="text-center py-4 text-green-600">No assignments found 🌱</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <footer class="mt-8 text-center text-green-400 text-xs">© 2025 Tawi Tree Planting Project | Field Officer Portal 🌳</footer>
+  </main>
+
+  <script>feather.replace();</script>
+  {% include 'includes/sidebar_behavior.html' %}
+  <script>
+    function getCookie(name) {
+      const value = `; ${document.cookie}`;
+      const parts = value.split(`; ${name}=`);
+      if (parts.length === 2) return parts.pop().split(';').shift();
+    }
+    (function () {
+      const toggle = document.getElementById('notif-toggle');
+      const dropdown = document.getElementById('notif-dropdown');
+      const root = document.getElementById('notif-dropdown-root');
+      if (!toggle || !dropdown) return;
+      toggle.addEventListener('click', (e) => {
+        e.preventDefault();
+        const isHidden = dropdown.classList.contains('hidden');
+        dropdown.classList.toggle('hidden', !isHidden);
+        toggle.setAttribute('aria-expanded', String(!isHidden));
+      });
+      document.addEventListener('click', (ev) => {
+        if (!root.contains(ev.target)) {
+          dropdown.classList.add('hidden');
+          toggle.setAttribute('aria-expanded', 'false');
+        }
+      });
+      document.querySelectorAll('.mark-read-btn').forEach(btn => {
+        btn.addEventListener('click', async (ev) => {
+          ev.preventDefault();
+          const id = btn.getAttribute('data-id');
+          const csrf = getCookie('csrftoken');
+          try {
+            const res = await fetch(`{% url 'notifications_mark' 0 %}`.replace('/0/', `/${id}/`), { method: 'POST', headers: {'X-CSRFToken': csrf} });
+            if (res.ok) {
+              btn.remove();
+              const badge = document.getElementById('notif-badge');
+              if (badge) {
+                const val = parseInt(badge.textContent || '0', 10) - 1;
+                if (val > 0) badge.textContent = String(val); else badge.remove();
+              }
+              const row = btn.closest('.notif-row');
+              if (row) row.style.opacity = '0.4';
+            } else { console.error('Failed to mark notification'); }
+          } catch (err) { console.error(err); }
+        });
+      });
+    })();
+  </script>
+  <script>
+    (function () {
+      const toggle = document.getElementById('profile-toggle');
+      const links = document.getElementById('profile-links');
+      if (!toggle || !links) return;
+      toggle.addEventListener('click', (e) => {
+        e.preventDefault();
+        const isHidden = links.classList.contains('hidden');
+        links.classList.toggle('hidden', !isHidden);
+        toggle.setAttribute('aria-expanded', String(!isHidden));
+      });
+    })();
+  </script>
+</body>
+</html>

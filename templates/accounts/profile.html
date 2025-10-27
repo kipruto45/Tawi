@@ -39,8 +39,8 @@
       <img src="{{ profile.profile_image.url|default:'{% static "img/default_profile.png" %}' }}"
            alt="Profile Picture"
            class="w-24 h-24 rounded-full shadow-md border-4 border-green-300 object-cover mb-3">
-      <h1 class="text-2xl font-extrabold text-green-700">{{ user.get_full_name|default:user.username }}</h1>
-      <p class="text-green-500 text-sm">{{ profile.role|default:"Member" }}</p>
+  <h1 class="text-2xl font-extrabold text-green-700">{{ user.get_full_name|default:user.username }}</h1>
+  <p class="text-green-500 text-sm">{{ user.get_role_display|default:"Member" }}</p>
   <a href="{% url 'accounts:profile_edit' %}"
          class="mt-2 inline-flex items-center gap-2 text-green-600 text-xs font-semibold hover:underline">
         <i data-feather="edit-2" class="w-3 h-3"></i> Edit Profile
