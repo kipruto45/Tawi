@@ -28,3 +28,7 @@ urlpatterns = [
     path('media/<int:pk>/delete/', media_delete_view, name='media_delete'),
     path('', include(router.urls)),
 ]
+
+# Application namespace used by templates that reverse names like
+# {% url 'media_app:media_list' %}
+app_name = 'media_app'

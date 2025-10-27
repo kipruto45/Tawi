@@ -75,7 +75,9 @@ urlpatterns = [
     path('profile/edit/', accounts_profile_edit, name='profile_edit'),
     path('', include(('core.urls', 'core'), namespace='core')),
     # Media app public gallery at top-level so templates can use reverse('media_list')
-    path('media/', include('media_app.urls')),
+    # and templates that reference the media_app namespace (e.g. {% url 'media_app:media_list' %})
+    # will resolve. We include with an explicit namespace.
+    path('media/', include(('media_app.urls', 'media_app'), namespace='media_app')),
     path('core/dashboard/', core_dashboard, name='core_dashboard'),
     path('core/analytics/', core_analytics, name='core_analytics'),
     # Include the accounts app under the 'accounts' namespace to avoid
