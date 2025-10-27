@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   {% load static %}
+  {% load role_tags %}
   <title>Register | Tawi Tree Planting Project</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/feather-icons"></script>
@@ -101,10 +102,7 @@
           <select name="role" required
                   class="w-full pl-10 pr-3 py-2 bg-green-50 text-green-900 rounded-md focus:ring-2 focus:ring-green-400 border border-green-100 text-sm appearance-none">
             <option value="" disabled selected>Select your role</option>
-            <option value="admin">🌿 Admin</option>
-            <option value="field_officer">🧑‍🌾 Field Officer</option>
-            <option value="partner">🏫 Partner Institution</option>
-            <option value="volunteer">🤝 Volunteer</option>
+            {% role_options request.POST.role|default:request.GET.role %}
           </select>
         </div>
 
