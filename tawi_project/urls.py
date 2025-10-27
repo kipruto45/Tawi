@@ -131,7 +131,9 @@ urlpatterns = [
     path('qrcodes/<int:pk>/edit/', fallback_views.qrcodes_edit_view, name='qrcodes_edit'),
     path('qrcodes/<int:pk>/delete/', fallback_views.qrcodes_delete_view, name='qrcodes_delete'),
     path('qrcodes/history/', fallback_views.qrcode_history_view, name='qrcode_history'),
-    path('reports/', include('reports.urls')),
+    # Include reports app with namespace so templates using 'reports:' resolve
+    path('reports/', include(('reports.urls', 'reports'), namespace='reports'),
+    ),
     # Provide a simple non-namespaced alias used by some dashboard templates.
     # Templates refer to the name 'reports' so expose it here to avoid
     # NoReverseMatch during template rendering in tests.

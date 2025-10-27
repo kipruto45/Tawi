@@ -19,3 +19,6 @@ urlpatterns = [
     path('web/detail/<uuid:pk>/', views.report_detail_view, name='report_edit'),
     path('', include(router.urls)),
 ]
+
+# Namespace used by templates that call names like {% url 'reports:reports-list' %}
+app_name = 'reports'
