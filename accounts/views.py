@@ -459,7 +459,20 @@ def api_register(request):
 @api_view(['GET', 'PUT'])
 @permission_classes([permissions.IsAuthenticated])
 def api_profile(request):
-    profile = request.user.profile
+    # Ensure a Profile exists for the authenticated user; create lazily if missing.
+    try:
+        profile = getattr(request.user, 'profile', None)
+    except Exception:
+        profile = None
+
+    if profile is None:
+        try:
+            from .models import Profile
+            profile, _ = Profile.objects.get_or_create(user=request.user)
+        except Exception:
+            # If creation fails for any reason, return a safe empty response
+            return Response({'detail': 'profile unavailable'}, status=503)
+
     if request.method == 'GET':
         return Response(ProfileSerializer(profile).data)
     else:
