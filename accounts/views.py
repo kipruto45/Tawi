@@ -291,6 +291,13 @@ class CustomLoginView(DjangoLoginView):
         except Exception:
             role = None
         ctx['initial_role'] = role
+        # expose an explicit 'registered' flag from the querystring so templates
+        # don't need to index into request.GET directly which can raise in
+        # template variable resolution in some edge-cases.
+        try:
+            ctx['registered'] = self.request.GET.get('registered')
+        except Exception:
+            ctx['registered'] = None
         return ctx
 
     def form_valid(self, form):

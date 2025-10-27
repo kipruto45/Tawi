@@ -16,7 +16,12 @@ def role_options(selected=None):
     # Prefer an explicitly declared canonical list; fall back to ROLE_CHOICES
     choices = getattr(User, 'CANONICAL_ROLES', None) or getattr(User, 'ROLE_CHOICES', [])
     out = []
+    seen = set()
     for key, label in choices:
+        # skip duplicate keys while preserving order
+        if key in seen:
+            continue
+        seen.add(key)
         sel = ' selected' if selected and str(selected) == str(key) else ''
         # Escape label minimally by relying on Django's choices being trusted
         out.append(f'<option value="{key}"{sel}>{label}</option>')

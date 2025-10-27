@@ -47,6 +47,11 @@ router.register(r'reports/generated', GeneratedReportViewSet)
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/', include(router.urls)),
+    # Include Django REST framework built-in login/logout views under the
+    # 'rest_framework' namespace so templates that call
+    # {% url 'rest_framework:login' %} / {% url 'rest_framework:logout' %}
+    # will resolve correctly (used by the browsable API and some templates).
+    path('api-auth/', include(('rest_framework.urls', 'rest_framework'), namespace='rest_framework')),
     path('api/media/', include('media_app.urls')),
     path('api/qrcodes/', include('qrcodes.urls')),
     path('api/notifications/', include('notifications.urls')),
@@ -114,7 +119,9 @@ urlpatterns = [
     path('accounts/reset/done/', auth_views.PasswordResetCompleteView.as_view(template_name='accounts/password_reset_complete.html'), name='password_reset_complete'),
     # django built-in auth views (login/logout and other auth helpers)
     path('accounts/', include('django.contrib.auth.urls')),
-    path('notifications/', include('notifications.urls')),
+    # include notifications with explicit namespace so templates can use
+    # {% url 'notifications:notifications_page' %} and related names.
+    path('notifications/', include(('notifications.urls', 'notifications'), namespace='notifications')),
     # public notifications alias for guests
     path('notifications/public/', notifications_views.notifications_public, name='notifications_public'),
     path('qrcodes/', include('qrcodes.urls')),

@@ -41,7 +41,7 @@
           Home
         </a>
       </div>
-      {% if request.GET.registered == '1' %}
+  {% if registered == '1' %}
         <div class="mb-3 text-sm text-green-800 bg-green-100 border border-green-200 rounded px-3 py-2">
           {% comment %} Show the latest success message which includes role if available; fallback text kept for compatibility. {% endcomment %}
           {% comment %} Show any success messages (registration added one). Avoid using non-standard tags like {% raw %}{% break %}{% endraw %}. {% endcomment %}
