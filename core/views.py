@@ -15,6 +15,15 @@ def landing(request):
 def about(request):
     return render(request, 'core/about.html')
 
+
+def learn_more(request):
+    """Simple informational 'learn more' page used by marketing links.
+
+    Provide a minimal template so the top-level /learn-more/ route returns
+    a friendly page rather than a 404.
+    """
+    return render(request, 'core/learn_more.html')
+
 def profile(request):
     return render(request, 'core/profile.html')
 
