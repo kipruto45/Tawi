@@ -6,8 +6,12 @@ services:
     name: tawi-web
     env: python
     plan: starter
-    buildCommand: "pip install -r requirements.txt && python manage.py collectstatic --noinput"
-    startCommand: "gunicorn tawi_project.wsgi:application --bind 0.0.0.0:$PORT --log-file - --workers 3"
+  # Install dependencies, apply migrations, collect static files during build.
+  # Running migrations in the build step ensures the DB schema matches the
+  # deployed code before the service starts. This is safe for most apps but
+  # can be adjusted if you prefer a separate migration job or manual control.
+  buildCommand: "pip install -r requirements.txt && python manage.py migrate --noinput && python manage.py collectstatic --noinput"
+  startCommand: "gunicorn tawi_project.wsgi:application --bind 0.0.0.0:$PORT --log-file - --workers 3"
     envVars:
       - key: DJANGO_DEBUG
         value: "False"
@@ -22,6 +26,7 @@ services:
       - key: STRIPE_SECRET_KEY
         scope: SECRET
 
-# NOTE: This config uses the repository-local SQLite database. This is suitable
-# for small, single-instance deployments or demos. For production, configure a
-# managed Postgres service and set DATABASE_URL accordingly.
+# NOTE: The repository now defaults to Postgres for parity with CI. For local
+# development Render/example configs should point DATABASE_URL at a Postgres
+# instance (managed Postgres or a self-hosted container) rather than a
+# repository-local SQLite file.

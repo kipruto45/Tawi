@@ -1,0 +1,247 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Media Gallery | Tawi Tree Planting Project</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/feather-icons"></script>
+  <style>
+    body {
+      background-color: #f0fdf4;
+      color: #1f2937;
+      font-family: 'Inter', sans-serif;
+      overflow: hidden; /* prevent scrollbars */
+    }
+
+    .gallery-container {
+      position: relative;
+      width: 90%;
+      max-width: 1200px;
+      margin: auto;
+      overflow: hidden;
+      border-radius: 20px;
+      box-shadow: 0 10px 30px rgba(34, 197, 94, 0.25);
+      background: rgba(255, 255, 255, 0.9);
+    }
+
+    .slider {
+      display: flex;
+      width: 200%; /* Two images per row */
+      animation: scroll 30s linear infinite;
+    }
+
+    .slide {
+      flex: 0 0 50%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 1rem;
+    }
+
+    .slide img {
+      width: 100%;
+      height: 400px;
+      object-fit: cover;
+      border-radius: 16px;
+      transition: transform 0.4s ease, box-shadow 0.4s ease;
+    }
+
+    .slide img:hover {
+      transform: scale(1.03);
+      box-shadow: 0 8px 24px rgba(22, 163, 74, 0.3);
+    }
+
+    @keyframes scroll {
+      0% { transform: translateX(0); }
+      100% { transform: translateX(-50%); }
+    }
+
+    /* Smooth fade between loops */
+    .gallery-overlay {
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      pointer-events: none;
+      background: linear-gradient(to right, #f0fdf4, transparent 10%, transparent 90%, #f0fdf4);
+    }
+  </style>
+</head>
+
+<body class="flex flex-col items-center justify-center min-h-screen relative px-4 py-8">
+  <!-- Header -->
+  <div class="text-center mb-8">
+    <h1 class="text-3xl font-extrabold text-green-700 mb-2 flex justify-center items-center gap-2">
+      <i data-feather="image" class="w-6 h-6 text-green-600"></i> Media Gallery
+    </h1>
+    <p class="text-green-600 text-sm">Captured moments from Tawi’s tree planting events 🌳</p>
+  </div>
+
+  <!-- Gallery -->
+  <div class="gallery-container">
+    <div class="slider">
+      {# Render display_items (images + non-images) #}
+      {% for media in display_items %}
+      <div class="slide">
+        {% if media.file_type == 'image' %}
+        <a href="{% url 'media_detail' media.id %}" class="slide-link" data-full="{{ media.file.url }}" data-type="image" title="{{ media.title }}">
+          <img loading="lazy" src="{% if media.thumbnail %}{{ media.thumbnail.url }}{% else %}{{ media.file.url }}{% endif %}" alt="{{ media.title|default:'Tree Planting' }}">
+        </a>
+        {% else %}
+        <a href="{% url 'media_detail' media.id %}" class="slide-link" data-full="{{ media.file.url }}" data-type="{{ media.file_type }}" title="{{ media.title }}">
+          <div class="w-full h-64 flex items-center justify-center bg-green-50 rounded-lg">
+            <i data-feather="file" class="w-12 h-12 text-green-600"></i>
+          </div>
+        </a>
+        {% endif %}
+        {% if media.title %}
+        <div class="text-sm text-green-600 mt-2 text-center">{{ media.title }}</div>
+        {% endif %}
+      </div>
+      {% endfor %}
+
+      {# placeholders #}
+      {% for _ in placeholders %}
+      <div class="slide">
+        <a href="{% static 'img/tree_planting_event.jpg' %}" class="slide-link" data-full="{% static 'img/tree_planting_event.jpg' %}">
+          <img loading="lazy" src="{% static 'img/tree_planting_event.jpg' %}" alt="Placeholder">
+        </a>
+        <div class="text-sm text-green-600 mt-2 text-center">Coming soon</div>
+      </div>
+      {% endfor %}
+
+      {# Duplicate for seamless infinite scroll #}
+      {% for media in display_items %}
+      <div class="slide">
+        {% if media.file_type == 'image' %}
+        <a href="{% url 'media_detail' media.id %}" class="slide-link" data-full="{{ media.file.url }}">
+          <img loading="lazy" src="{{ media.file.url }}" alt="{{ media.title|default:'Tree Planting' }}">
+        </a>
+        {% else %}
+        <a href="{% url 'media_detail' media.id %}" class="slide-link" data-full="{{ media.file.url }}">
+          <div class="w-full h-64 flex items-center justify-center bg-green-50 rounded-lg">
+            <i data-feather="file" class="w-12 h-12 text-green-600"></i>
+          </div>
+        </a>
+        {% endif %}
+        {% if media.title %}
+        <div class="text-sm text-green-600 mt-2 text-center">{{ media.title }}</div>
+        {% endif %}
+      </div>
+      {% endfor %}
+      {% for _ in placeholders %}
+      <div class="slide">
+        <a href="{% static 'img/tree_planting_event.jpg' %}" class="slide-link" data-full="{% static 'img/tree_planting_event.jpg' %}">
+          <img loading="lazy" src="{% static 'img/tree_planting_event.jpg' %}" alt="Placeholder">
+        </a>
+        <div class="text-sm text-green-600 mt-2 text-center">Coming soon</div>
+      </div>
+      {% endfor %}
+    </div>
+
+    {# Responsive grid fallback for small screens: show a grid below the carousel #}
+    <div class="mt-6 grid grid-cols-2 gap-3 md:hidden">
+      {% for media in display_items|slice:":6" %}
+      <div class="rounded overflow-hidden bg-white shadow-sm">
+        {% if media.file_type == 'image' %}
+        <img loading="lazy" src="{{ media.file.url }}" alt="{{ media.title|default:'Tree Planting' }}" class="w-full h-40 object-cover">
+        {% else %}
+        <div class="w-full h-40 flex items-center justify-center bg-green-50">
+          <i data-feather="file" class="w-6 h-6 text-green-600"></i>
+        </div>
+        {% endif %}
+        <div class="p-2 text-sm text-green-700">{{ media.title|default:'Untitled' }}</div>
+      </div>
+      {% endfor %}
+    </div>
+    <div class="gallery-overlay"></div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="mt-8 text-center text-green-400 text-xs">
+    © 2025 Tawi Tree Planting Project | Growing a Greener Future 🌿
+  </footer>
+
+  <!-- Lightbox overlay (accessible) -->
+  <div id="lightbox" class="fixed inset-0 bg-black/75 hidden items-center justify-center z-50 opacity-0 pointer-events-none" role="dialog" aria-modal="true" aria-hidden="true">
+    <button id="lightbox-close" class="absolute top-6 right-6 text-white text-2xl" aria-label="Close image">&times;</button>
+    <img id="lightbox-img" src="" alt="" class="max-h-[90vh] max-w-[90vw] rounded-lg shadow-2xl transition-transform transform-gpu"/>
+  </div>
+
+  <script>
+    feather.replace();
+    (function(){
+      let lastFocused = null;
+      const lb = document.getElementById('lightbox');
+  const img = document.getElementById('lightbox-img');
+  let videoEl = null;
+      const closeBtn = document.getElementById('lightbox-close');
+
+      function openLightbox(src, alt, type){
+        lastFocused = document.activeElement;
+        // if it's a video, create a video element instead of using the img
+        if(type === 'video'){
+          if(videoEl){ videoEl.remove(); videoEl = null; }
+          videoEl = document.createElement('video');
+          videoEl.src = src;
+          videoEl.controls = true;
+          videoEl.autoplay = true;
+          videoEl.muted = true;
+          videoEl.className = 'max-h-[90vh] max-w-[90vw] rounded-lg shadow-2xl';
+          lb.appendChild(videoEl);
+        } else {
+          img.src = src || '';
+          img.alt = alt || '';
+          img.style.display = '';
+        }
+        lb.classList.remove('hidden');
+        // allow CSS transition
+        requestAnimationFrame(()=>{
+          lb.classList.remove('opacity-0');
+          lb.classList.add('opacity-100');
+          lb.classList.remove('pointer-events-none');
+          lb.classList.add('flex');
+        });
+        lb.setAttribute('aria-hidden','false');
+        closeBtn.focus();
+        document.addEventListener('keydown', onKeyDown);
+      }
+
+      function closeLightbox(){
+        lb.classList.add('opacity-0');
+        lb.classList.remove('opacity-100');
+        lb.classList.add('pointer-events-none');
+        lb.classList.remove('flex');
+        lb.setAttribute('aria-hidden','true');
+        if(videoEl){
+          try{ videoEl.pause(); }catch(e){}
+          videoEl.remove();
+          videoEl = null;
+        }
+        img.src = '';
+        document.removeEventListener('keydown', onKeyDown);
+        if(lastFocused && typeof lastFocused.focus === 'function') lastFocused.focus();
+      }
+
+      function onKeyDown(e){
+        if(e.key === 'Escape' || e.key === 'Esc'){
+          closeLightbox();
+        }
+      }
+
+      document.addEventListener('click', function(e){
+        const a = e.target.closest && e.target.closest('.slide-link');
+        if(!a) return;
+        e.preventDefault();
+        const href = a.getAttribute('data-full') || a.getAttribute('href');
+        const alt = a.getAttribute('title') || '';
+        const type = a.getAttribute('data-type') || 'image';
+        openLightbox(href, alt, type);
+      });
+
+      closeBtn.addEventListener('click', function(){ closeLightbox(); });
+      lb.addEventListener('click', function(e){ if(e.target === lb){ closeLightbox(); } });
+    })();
+  </script>
+</body>
+</html>

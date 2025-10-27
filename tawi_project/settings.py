@@ -1,6 +1,15 @@
 import os
 from pathlib import Path
 
+# Load local .env early so development env vars like USE_ALLAUTH, GOOGLE_CLIENT_ID
+# and GOOGLE_SECRET are available during local runs. This is best-effort and
+# will not crash if python-dotenv isn't installed.
+try:
+    from dotenv import load_dotenv
+    load_dotenv(Path(__file__).resolve().parent.parent / '.env')
+except Exception:
+    pass
+
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = os.environ.get('SECRET_KEY', 'replace-me-in-production')
@@ -92,11 +101,16 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'tawi_project.wsgi.application'
 
-# Use sqlite for scaffold; user can switch to Postgres
+# Default database: PostgreSQL (project default). You may override via
+# DATABASE_URL or the USE_POSTGRES/POSTGRES_* environment variables.
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': os.environ.get('POSTGRES_DB', 'tawi_db'),
+        'USER': os.environ.get('POSTGRES_USER', 'postgres'),
+    'PASSWORD': os.environ.get('POSTGRES_PASSWORD', ''),
+        'HOST': os.environ.get('POSTGRES_HOST', '127.0.0.1'),
+        'PORT': os.environ.get('POSTGRES_PORT', '5432'),
     }
 }
 
@@ -291,7 +305,10 @@ if USE_2FA:
     INSTALLED_APPS += [
         'django_otp',
         'django_otp.plugins.otp_totp',
+        'django_otp.plugins.otp_email',
+        'django_otp.plugins.otp_static',
         'two_factor',
+        'two_factor.plugins.email',
     ]
     MIDDLEWARE.insert(0, 'django_otp.middleware.OTPMiddleware')
 
@@ -396,6 +413,31 @@ if not DEBUG:
         except Exception:
             # keep the lighter fallback parsing above
             pass
+
+    # Allow forcing PostgreSQL as the project's database via USE_POSTGRES.
+    # This is useful for local development parity with CI. When set, we prefer
+    # explicit POSTGRES_* env vars (use sensible defaults that match CI services).
+    if os.environ.get('USE_POSTGRES') in ('1', 'true', 'True') and not DATABASE_URL:
+        DATABASES = {
+            'default': {
+                'ENGINE': 'django.db.backends.postgresql',
+                'NAME': os.environ.get('POSTGRES_DB', 'postgres'),
+                'USER': os.environ.get('POSTGRES_USER', 'postgres'),
+                'PASSWORD': os.environ.get('POSTGRES_PASSWORD', ''),
+                'HOST': os.environ.get('POSTGRES_HOST', '127.0.0.1'),
+                'PORT': os.environ.get('POSTGRES_PORT', '5432'),
+            }
+        }
+
+# Optional: allow overriding the test database name to make local test runs
+# predictable and avoid Django's automatic 'test_' prefixing issues. Setting
+# DJANGO_TEST_DB_NAME will set DATABASES['default']['TEST']['NAME'] directly
+# so the test runner will reuse or create the specified database name.
+DJANGO_TEST_DB_NAME = os.environ.get('DJANGO_TEST_DB_NAME')
+if DJANGO_TEST_DB_NAME:
+    DATABASES.setdefault('default', {})
+    DATABASES['default'].setdefault('TEST', {})
+    DATABASES['default']['TEST']['NAME'] = DJANGO_TEST_DB_NAME
 
     # Configure static files storage: use WhiteNoise storage in production when
     # available and DEBUG is False. Users can override STATICFILES_STORAGE via env.
