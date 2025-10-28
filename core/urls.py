@@ -10,7 +10,8 @@ from django.shortcuts import redirect
 urlpatterns = [
     path('', landing, name='landing'),
     # Convenience access for a public guest landing page
-    path('guest/', lambda request: redirect('dashboard_guest'), name='guest'),
+    # Use the top-level alias 'guest_dashboard' which is defined in project urls
+    path('guest/', lambda request: redirect('guest_dashboard'), name='guest'),
     path('about/', about, name='about'),
     path('terms/', terms, name='terms'),
     path('privacy/', privacy, name='privacy'),

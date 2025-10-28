@@ -1,4 +1,5 @@
 from django.shortcuts import render
+from django.contrib.auth.decorators import user_passes_test
 from django.core.cache import cache
 from .services.dashboard_service import get_dashboard_summary
 from django.contrib.auth import get_user_model
@@ -12,18 +13,73 @@ def dashboard(request):
     return dashboard_admin(request)
 
 
+def _can_view_admin(user):
+    try:
+        return bool(user and user.is_authenticated and (user.is_superuser or user.has_perm('dashboard.view_admin_dashboard')))
+    except Exception:
+        return False
+
+
+@user_passes_test(_can_view_admin)
 def dashboard_admin(request):
     """Render admin dashboard using aggregated metrics from the service layer.
 
-    Uses caching to avoid repeated heavy queries.
+    This view is protected so only authenticated users may access the admin
+    dashboard. It builds a template-friendly context with safe fallbacks so
+    optional apps (notifications, monitoring, partners) do not cause
+    TemplateSyntaxError or 500 responses during rendering.
     """
-    cache_key = f"dashboard_summary_view_{request.user.id if request.user.is_authenticated else 'anon'}"
-    summary = cache.get(cache_key)
-    if summary is None:
-        summary = get_dashboard_summary(user=request.user if request.user.is_authenticated else None)
-        cache.set(cache_key, summary, 60 * 5)
+    # Base summary context (provides total_trees, total_volunteers, etc.)
+    ctx = _build_summary_context(request)
 
-    return render(request, 'dashboard/dashboard_admin.html', {'summary': summary})
+    # Add a few additional template-friendly variables used by the admin
+    # dashboard template. Use try/except around optional imports so the
+    # view remains robust when apps/models are not installed.
+    # total_users
+    try:
+        from django.contrib.auth import get_user_model
+        User = get_user_model()
+        ctx['total_users'] = User.objects.count()
+    except Exception:
+        ctx['total_users'] = getattr(ctx.get('summary'), 'total_users', 0) if ctx.get('summary') else 0
+
+    # total_partners (optional core Partner model)
+    try:
+        from core.models import Partner
+        ctx['total_partners'] = Partner.objects.count()
+    except Exception:
+        ctx['total_partners'] = 0
+
+    # total_messages (optional messages app)
+    try:
+        from core.models import Message
+        ctx['total_messages'] = Message.objects.count()
+    except Exception:
+        ctx['total_messages'] = 0
+
+    # make sure total_trees is present
+    ctx['total_trees'] = ctx.get('total_trees', getattr(ctx.get('summary'), 'total_trees', 0) if ctx.get('summary') else 0)
+
+    # Notifications preview for the current user (optional app)
+    try:
+        ctx['notifications_preview'] = _get_notifications_for_user(request.user)
+        ctx['unread_notifications_count'] = sum(1 for n in ctx['notifications_preview'] if getattr(n, 'unread', False))
+    except Exception:
+        ctx['notifications_preview'] = []
+        ctx['unread_notifications_count'] = 0
+
+    # Attempt to provide a user_profile object if available to keep templates
+    # that reference `user_profile` working.
+    try:
+        user_profile = getattr(request.user, 'profile', None)
+        if user_profile is None:
+            from accounts.models import Profile
+            user_profile, _ = Profile.objects.get_or_create(user=request.user)
+        ctx['user_profile'] = user_profile
+    except Exception:
+        ctx['user_profile'] = None
+
+    return render(request, 'dashboard/dashboard_admin.html', ctx)
 
 
 def dashboard_field(request):

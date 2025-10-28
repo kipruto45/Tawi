@@ -8,13 +8,15 @@ class PostLoginRedirectTests(TestCase):
         self.User = get_user_model()
 
         # mapping of role -> expected named url
+        # For historical compatibility many templates/tests use un-namespaced
+        # route names. Expect those top-level aliases here.
         self.role_map = {
             'admin': 'admin_dashboard',
             'field_officer': 'dashboard_field',
             'volunteer': 'dashboard_volunteer',
-            'beneficiary': 'dashboard',
+            'beneficiary': 'dashboard:dashboard',
             'partner': 'dashboard_partner',
-            'guest': 'dashboard_guest',
+            'guest': 'guest_dashboard',
             'project_manager': 'dashboard_project',
         }
 

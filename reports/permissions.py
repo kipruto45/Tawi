@@ -9,8 +9,11 @@ class IsReportOwnerOrAdmin(permissions.BasePermission):
         return request.user and request.user.is_authenticated
 
     def has_object_permission(self, request, view, obj):
-        if request.user.is_staff:
-            return True
+        try:
+            if request.user.is_authenticated and request.user.has_perm('reports.manage_reports'):
+                return True
+        except Exception:
+            pass
         # Allow access to system-generated reports (no creator) and public reports
         if getattr(obj, 'created_by', None) is None:
             return True

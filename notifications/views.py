@@ -18,9 +18,13 @@ class NotificationViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        # users only see their notifications unless staff
-        if self.request.user.is_staff:
-            return super().get_queryset()
+        # users only see their notifications unless they have notification admin perms
+        try:
+            user = self.request.user
+            if user.is_authenticated and (user.has_perm('notifications.manage_notifications') or 'Admins' in set(user.groups.values_list('name', flat=True))):
+                return super().get_queryset()
+        except Exception:
+            pass
         return Notification.objects.filter(recipient=self.request.user)
 
     @action(detail=False, methods=['get'])
@@ -31,7 +35,12 @@ class NotificationViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['post'])
     def mark_read(self, request, pk=None):
         notif = get_object_or_404(Notification, pk=pk)
-        if notif.recipient != request.user and not request.user.is_staff:
+        try:
+            if notif.recipient != request.user:
+                user = request.user
+                if not (user.is_authenticated and (user.has_perm('notifications.manage_notifications') or 'Admins' in set(user.groups.values_list('name', flat=True)))):
+                    return Response(status=status.HTTP_403_FORBIDDEN)
+        except Exception:
             return Response(status=status.HTTP_403_FORBIDDEN)
         notif.mark_read()
         return Response({'status':'ok'})
@@ -39,7 +48,10 @@ class NotificationViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['post'])
     def send(self, request):
         # admin-only endpoint to create & optionally dispatch a notification
-        if not request.user.is_staff:
+        try:
+            if not (request.user.is_authenticated and (request.user.has_perm('notifications.manage_notifications') or 'Admins' in set(request.user.groups.values_list('name', flat=True)))):
+                return Response(status=status.HTTP_403_FORBIDDEN)
+        except Exception:
             return Response(status=status.HTTP_403_FORBIDDEN)
         serializer = SendNotificationSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)

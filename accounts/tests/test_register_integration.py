@@ -1,5 +1,6 @@
 from django.test import TestCase
 from django.urls import reverse
+from urllib.parse import urlparse
 
 
 class RegisterIntegrationTests(TestCase):
@@ -14,7 +15,9 @@ class RegisterIntegrationTests(TestCase):
         }
         resp = self.client.post(url, data, follow=True)
         # After successful registration we expect to be redirected to login
-        self.assertEqual(resp.redirect_chain[-1][0], reverse('login'))
+        # allow query params (registered/role) to be present; compare path only
+        final_url = resp.redirect_chain[-1][0]
+        self.assertEqual(urlparse(final_url).path, reverse('login'))
         # Check messages include the role label or the raw role string
         content = resp.content.decode('utf-8')
         self.assertIn('Role', content)

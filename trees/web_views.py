@@ -1,9 +1,32 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required, user_passes_test
+from django.contrib.auth import REDIRECT_FIELD_NAME
+from django.shortcuts import resolve_url
 from .models import Tree
 
 def staff_required(view_func):
-    return user_passes_test(lambda u: u.is_active and u.is_staff)(view_func)
+    """Old decorator kept for compatibility but prefers permission checks.
+
+    Allows access to active users who either have the `trees.manage_trees`
+    permission or belong to the `Admins` group. This avoids relying on
+    `is_staff` directly in templates and views.
+    """
+    def check(u):
+        if not (u and u.is_active):
+            return False
+        try:
+            if u.has_perm('trees.manage_trees'):
+                return True
+            groups = set(u.groups.values_list('name', flat=True))
+            if 'Admins' in groups:
+                return True
+        except Exception:
+            pass
+        return False
+    # avoid resolving URLs at import time (can trigger circular imports);
+    # pass the namespaced login view string directly so Django will resolve it
+    # at runtime when redirecting unauthenticated users.
+    return user_passes_test(check, login_url='accounts:login')(view_func)
 
 
 @login_required

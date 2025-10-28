@@ -37,25 +37,25 @@
     <form id="feedback-form" method="POST" novalidate>
       {% csrf_token %}
 
-      <!-- Beneficiary -->
-      <label class="block text-sm text-green-700 mb-1" for="id_beneficiary">Beneficiary (optional)</label>
-      {{ form.beneficiary|add_class:"w-full p-2 border border-green-300 rounded focus:ring-2 focus:ring-green-500 mb-3" }}
+  <!-- Beneficiary -->
+  <label class="block text-sm text-green-700 mb-1" for="id_beneficiary">Beneficiary (optional)</label>
+  {{ form.beneficiary }}
 
-      <!-- Name -->
-      <label class="block text-sm text-green-700 mb-1" for="id_submitted_by">Your Name</label>
-      {{ form.submitted_by|add_class:"w-full p-2 border border-green-300 rounded focus:ring-2 focus:ring-green-500 mb-3" }}
+  <!-- Name -->
+  <label class="block text-sm text-green-700 mb-1" for="id_submitted_by">Your Name</label>
+  {{ form.submitted_by }}
 
-      <!-- Email -->
-      <label class="block text-sm text-green-700 mb-1" for="id_email">Email</label>
-      {{ form.email|add_class:"w-full p-2 border border-green-300 rounded focus:ring-2 focus:ring-green-500 mb-3" }}
+  <!-- Email -->
+  <label class="block text-sm text-green-700 mb-1" for="id_email">Email</label>
+  {{ form.email }}
 
-      <!-- Phone -->
-      <label class="block text-sm text-green-700 mb-1" for="id_phone">Phone</label>
-      {{ form.phone|add_class:"w-full p-2 border border-green-300 rounded focus:ring-2 focus:ring-green-500 mb-3" }}
+  <!-- Phone -->
+  <label class="block text-sm text-green-700 mb-1" for="id_phone">Phone</label>
+  {{ form.phone }}
 
-      <!-- Message -->
-      <label class="block text-sm text-green-700 mb-1" for="id_message">Message</label>
-      {{ form.message|add_class:"w-full p-3 border border-green-300 rounded-md focus:ring-2 focus:ring-green-500 min-h-[100px] resize-y mb-4" }}
+  <!-- Message -->
+  <label class="block text-sm text-green-700 mb-1" for="id_message">Message</label>
+  {{ form.message }}
 
       <!-- Buttons -->
       <div class="flex items-center justify-between mt-4">
@@ -64,7 +64,7 @@
           <i data-feather="send" class="w-4 h-4"></i> Send
         </button>
 
-        <a href="{% url 'dashboard_guest' %}"
+  <a href="{% url 'guest_dashboard' %}"
            class="text-sm text-green-700 hover:underline flex items-center gap-1">
           <i data-feather="arrow-left" class="w-4 h-4"></i> Back to Dashboard
         </a>

@@ -13,8 +13,8 @@ class TreeModelTest(TestCase):
         TreeUpdate.objects.create(tree=self.t, date='2024-07-01', status='alive', height_cm=140)
 
     def test_growth_rate_property(self):
-    # pick the update that has height 140 (the later one in our setup)
-    upd = TreeUpdate.objects.get(height_cm=140)
+        # pick the update that has height 140 (the later one in our setup)
+        upd = TreeUpdate.objects.get(height_cm=140)
         rate = upd.growth_rate_per_day
         # from 100 to 140 in 30 days => 1.333.. cm/day
         self.assertIsNotNone(rate)

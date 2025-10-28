@@ -135,7 +135,15 @@ def register(request):
     else:
         form = UserRegisterForm()
         pform = ProfileForm()
-    return render(request, 'accounts/register.html', {'form': form, 'pform': pform})
+
+    # provide an initial_role context value so templates don't access
+    # request.GET/POST directly (which can raise during template resolution)
+    try:
+        initial_role = request.GET.get('role') or request.POST.get('role')
+    except Exception:
+        initial_role = None
+
+    return render(request, 'accounts/register.html', {'form': form, 'pform': pform, 'initial_role': initial_role})
 
 @login_required
 def profile_view(request):
@@ -180,9 +188,14 @@ def role_management(request):
     groups = Group.objects.all()
     # Only staff users should be able to change roles via this view
     if request.method == 'POST':
-        if not request.user.is_authenticated or not request.user.is_staff:
-            messages.error(request, 'You do not have permission to perform this action.')
-            return redirect('role_management')
+        try:
+            if not (request.user.is_authenticated and (request.user.has_perm('accounts.manage_roles') or 'Admins' in set(request.user.groups.values_list('name', flat=True)))):
+                messages.error(request, 'You do not have permission to perform this action.')
+                return redirect('role_management')
+        except Exception:
+            if not request.user.is_authenticated or not request.user.is_staff:
+                messages.error(request, 'You do not have permission to perform this action.')
+                return redirect('role_management')
 
         email = request.POST.get('email') or request.POST.get('username')
         new_role = request.POST.get('role')
@@ -242,7 +255,7 @@ def role_management(request):
 def guest_dashboard(request):
     # redirect to the guest-specific dashboard route which renders
     # `dashboard/dashboard_guest.html` so the UX matches the 'Continue as Guest' link.
-    return redirect('dashboard_guest')
+    return redirect('guest_dashboard')
 
 
 def provider_login_shim(request, provider_name):
@@ -270,6 +283,28 @@ class CustomLoginView(DjangoLoginView):
     """
     template_name = 'accounts/login.html'
 
+    def get_context_data(self, **kwargs):
+        """Add a safe 'initial_role' value to the template context.
+
+        We compute this server-side using QueryDict.get() so templates don't
+        attempt to index into request.GET/POST directly (which raises
+        MultiValueDictKeyError when the key is missing).
+        """
+        ctx = super().get_context_data(**kwargs)
+        role = None
+        try:
+            role = self.request.GET.get('role') or self.request.POST.get('role')
+        except Exception:
+            role = None
+        ctx['initial_role'] = role
+        # expose an explicit 'registered' flag from the querystring so templates
+        # don't need to index into request.GET directly which can raise in
+        # template variable resolution in some edge-cases.
+        try:
+            ctx['registered'] = self.request.GET.get('registered')
+        except Exception:
+            ctx['registered'] = None
+        return ctx
     def form_valid(self, form):
         # apply remember-me behavior
         remember = self.request.POST.get('remember')
@@ -307,14 +342,18 @@ class CustomLoginView(DjangoLoginView):
         }
         norm_role = alias_map.get(user_role, user_role)
 
+        # Use top-level compatibility names where many templates and tests
+        # expect un-namespaced reverses (for historical reasons). These
+        # aliases are defined in `tawi_project/urls.py` and map to the
+        # canonical dashboard views.
         role_map = {
             'admin': 'admin_dashboard',
             'field_officer': 'dashboard_field',
             'volunteer': 'dashboard_volunteer',
-            'beneficiary': 'dashboard',
+            'beneficiary': 'dashboard:dashboard',
             # canonical partner key
             'partner': 'dashboard_partner',
-            'guest': 'dashboard_guest',
+            'guest': 'guest_dashboard',
             'community': 'dashboard_community',
             'project_manager': 'dashboard_project',
         }
@@ -351,7 +390,7 @@ class CustomLoginView(DjangoLoginView):
                 elif 'Volunteers' in user_groups:
                     target = 'dashboard_volunteer'
                 elif 'Guests' in user_groups:
-                    target = 'dashboard_guest'
+                    target = 'guest_dashboard'
 
         # Log redirect decision for analytics/auditing
         try:
@@ -387,9 +426,9 @@ def post_login_redirect(request):
     ensure consistent behavior for social auth or other login flows that rely on
     LOGIN_REDIRECT_URL.
     """
-    # If user is not authenticated, send them to the generic landing
+    # If user is not authenticated, send them to the generic dashboard landing (namespaced)
     if not request.user.is_authenticated:
-        return redirect('dashboard')
+        return redirect('dashboard:dashboard')
 
     user_role = getattr(request.user, 'role', None)
     alias_map = {
@@ -402,9 +441,9 @@ def post_login_redirect(request):
         'admin': 'admin_dashboard',
         'field_officer': 'dashboard_field',
         'volunteer': 'dashboard_volunteer',
-        'beneficiary': 'dashboard',
+        'beneficiary': 'dashboard:dashboard',
         'partner': 'dashboard_partner',
-        'guest': 'dashboard_guest',
+        'guest': 'guest_dashboard',
         'community': 'dashboard_community',
         'project_manager': 'dashboard_project',
     }
@@ -436,16 +475,17 @@ def post_login_redirect(request):
         elif 'Volunteers' in user_groups:
             target = 'dashboard_volunteer'
         elif 'Guests' in user_groups:
-            target = 'dashboard_guest'
+            target = 'guest_dashboard'
 
     # Final fallback
     if not target:
-        target = 'dashboard'
+        # default to the namespaced landing if no other target available
+        target = 'dashboard:dashboard'
 
     try:
         return redirect(target)
     except NoReverseMatch:
-        return redirect('dashboard')
+        return redirect('dashboard:dashboard')
 
 @api_view(['POST'])
 @permission_classes([permissions.AllowAny])

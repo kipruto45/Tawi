@@ -119,6 +119,8 @@ TEMPLATES = [
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
                 'core.context_processors.notifications_context',
+                'core.context_processors.user_profile',
+                'core.context_processors.admin_flag',
             ],
             'builtins': [
                 'accounts.templatetags.social_tags',

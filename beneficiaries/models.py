@@ -30,3 +30,10 @@ class PlantingSite(models.Model):
 
     def __str__(self):
         return f"{self.name or self.beneficiary.name}"
+    
+    class Meta:
+        # Custom permission to control who may manage planting sites (create/edit/delete)
+        # Use `user.has_perm('beneficiaries.manage_sites')` to check this permission.
+        permissions = (
+            ('manage_sites', 'Can manage planting sites'),
+        )

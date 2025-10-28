@@ -5,3 +5,9 @@ class QrcodesConfig(AppConfig):
     default_auto_field = 'django.db.models.BigAutoField'
     name = 'qrcodes'
     path = Path(__file__).resolve().parent
+
+    def ready(self):
+        try:
+            import qrcodes.signals  # noqa: F401
+        except Exception:
+            pass

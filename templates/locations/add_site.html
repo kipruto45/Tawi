@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  {% load static %}
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tawi | Add Planting Site</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/feather-icons"></script>
+
+  <style>
+    body {
+      background-image: url('{% static "img/tawi_forest_bg.jpg" %}');
+      background-size: cover;
+      background-position: center;
+      background-attachment: fixed;
+    }
+    .glass {
+      background: rgba(255,255,255,0.92);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(34,197,94,0.25);
+      border-radius: 20px;
+      box-shadow: 0 8px 25px rgba(34,197,94,0.15);
+    }
+    .btn-green {
+      background-color: #22c55e;
+      color: white;
+      font-weight: 600;
+      border-radius: 10px;
+      padding: 0.5rem 1.2rem;
+      transition: all 0.3s ease;
+    }
+    .btn-green:hover {
+      background-color: #16a34a;
+      transform: translateY(-1px);
+    }
+    .btn-red {
+      background-color: #dc2626;
+      color: white;
+      border-radius: 10px;
+      padding: 0.5rem 1.2rem;
+      transition: all 0.3s ease;
+    }
+    .btn-red:hover {
+      background-color: #b91c1c;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col items-center p-8 bg-green-50/70">
+
+  <!-- Header -->
+  <header class="text-center mb-10">
+    <div class="flex flex-col items-center gap-3">
+      <img src="{% static 'img/tawi_logo.png' %}" alt="Tawi Logo" 
+           class="w-16 h-16 rounded-full border border-green-300"
+           onerror="this.onerror=null;this.src='{% static 'img/tawi_leaf_logo.svg' %}';" />
+      <h1 class="text-3xl font-extrabold text-green-700">🌱 Add New Planting Site</h1>
+      <p class="text-green-600 text-sm">Fill in the details below to register a new planting site.</p>
+    </div>
+  </header>
+
+  <!-- Add Site Form -->
+  <div class="glass w-full max-w-2xl p-8">
+    <form method="post" class="space-y-6">
+      {% csrf_token %}
+      <div class="space-y-4">
+        {{ form.as_p }}
+      </div>
+
+      <div class="flex justify-center gap-4 pt-4">
+        <button type="submit" class="btn-green flex items-center gap-2">
+          <i data-feather="save" class="w-4 h-4"></i> Save
+        </button>
+        <a href="{% url 'locations:location_map' %}" class="btn-red flex items-center gap-2">
+          <i data-feather="x-circle" class="w-4 h-4"></i> Cancel
+        </a>
+      </div>
+    </form>
+  </div>
+
+  <!-- Footer -->
+  <footer class="mt-10 text-center text-green-400 text-xs">
+    © 2025 Tawi Tree Planting Project | Admin Panel
+  </footer>
+
+  <script>feather.replace();</script>
+</body>
+</html>

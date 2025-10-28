@@ -16,16 +16,16 @@ class RoleRedirectsTest(TestCase):
     def test_roles_redirect_to_expected_dashboards(self):
         # mapping of role -> expected url name
         mapping = {
-            'admin': 'admin_dashboard',
-            'field_officer': 'dashboard_field',
-            'field': 'dashboard_field',
-            'volunteer': 'dashboard_volunteer',
-            'beneficiary': 'dashboard',
-            'partner': 'dashboard_partner',
-            'partner_institution': 'dashboard_partner',
-            'guest': 'dashboard_guest',
-            'community': 'dashboard_community',
-            'project_manager': 'dashboard_project',
+            'admin': 'dashboard:admin_dashboard',
+            'field_officer': 'dashboard:dashboard_field',
+            'field': 'dashboard:dashboard_field',
+            'volunteer': 'dashboard:dashboard_volunteer',
+            'beneficiary': 'dashboard:dashboard',
+            'partner': 'dashboard:dashboard_partner',
+            'partner_institution': 'dashboard:dashboard_partner',
+            'guest': 'guest_dashboard',
+            'community': 'dashboard:dashboard_community',
+            'project_manager': 'dashboard:dashboard_project',
         }
 
         pwd = 'p@ssw0rd123'

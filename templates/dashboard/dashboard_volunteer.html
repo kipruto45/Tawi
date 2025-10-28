@@ -88,24 +88,28 @@
           <i data-feather="mail" class="w-5 h-5 text-green-700"></i>
         </a>
         {% if request.user.is_authenticated %}
-          {% with role=request.user.profile.role|default_if_none:"" %}
-            {% if role == 'admin' %}
-              <a href="{% url 'dashboard:dashboard_admin' %}" class="flex items-center gap-2 p-2 rounded-md hover:bg-green-50" aria-label="Profile">
-            {% elif role == 'field' or role == 'field_officer' %}
-              <a href="{% url 'dashboard:dashboard_field' %}" class="flex items-center gap-2 p-2 rounded-md hover:bg-green-50" aria-label="Profile">
-            {% elif role == 'partner' %}
-              <a href="{% url 'dashboard:dashboard_partner' %}" class="flex items-center gap-2 p-2 rounded-md hover:bg-green-50" aria-label="Profile">
-            {% elif role == 'community' %}
-              <a href="{% url 'dashboard:dashboard_community' %}" class="flex items-center gap-2 p-2 rounded-md hover:bg-green-50" aria-label="Profile">
-            {% else %}
-              <a href="{% url 'accounts:profile' %}" class="flex items-center gap-2 p-2 rounded-md hover:bg-green-50" aria-label="Profile">
-            {% endif %}
-          {% endwith %}
+          {% if is_admin %}
+            <a href="{% url 'dashboard:dashboard_admin' %}" class="flex items-center gap-2 p-2 rounded-md hover:bg-green-50" aria-label="Profile">
+          {% else %}
+            {% with role=user_profile.role|default_if_none:"" %}
+              {% if role == 'admin' %}
+                <a href="{% url 'dashboard:dashboard_admin' %}" class="flex items-center gap-2 p-2 rounded-md hover:bg-green-50" aria-label="Profile">
+              {% elif role == 'field' or role == 'field_officer' %}
+                <a href="{% url 'dashboard:dashboard_field' %}" class="flex items-center gap-2 p-2 rounded-md hover:bg-green-50" aria-label="Profile">
+              {% elif role == 'partner' %}
+                <a href="{% url 'dashboard:dashboard_partner' %}" class="flex items-center gap-2 p-2 rounded-md hover:bg-green-50" aria-label="Profile">
+              {% elif role == 'community' %}
+                <a href="{% url 'dashboard:dashboard_community' %}" class="flex items-center gap-2 p-2 rounded-md hover:bg-green-50" aria-label="Profile">
+              {% else %}
+                <a href="{% url 'accounts:profile' %}" class="flex items-center gap-2 p-2 rounded-md hover:bg-green-50" aria-label="Profile">
+              {% endif %}
+            {% endwith %}
+          {% endif %}
         {% else %}
               <a href="{% url 'accounts:profile' %}" class="flex items-center gap-2 p-2 rounded-md hover:bg-green-50" aria-label="Profile">
         {% endif %}
-          {% if request.user.is_authenticated and request.user.profile and request.user.profile.profile_image %}
-            <img src="{{ request.user.profile.profile_image.url }}" alt="Profile" class="w-6 h-6 rounded-full object-cover" />
+          {% if user_profile and user_profile.profile_image %}
+            <img src="{{ user_profile.profile_image.url }}" alt="Profile" class="w-6 h-6 rounded-full object-cover" />
           {% else %}
             <img src="{% static 'img/default_profile.png' %}" alt="Profile" class="w-6 h-6 rounded-full object-cover" />
           {% endif %}

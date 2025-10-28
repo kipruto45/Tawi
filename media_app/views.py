@@ -11,8 +11,14 @@ from django.http import HttpResponseForbidden
 
 class IsUploaderOrAdmin:
     def has_object_permission(self, request, view, obj):
-        if request.user.is_authenticated and getattr(request.user, 'role', '') == 'admin':
-            return True
+        user = request.user
+        try:
+            if user.is_authenticated and user.has_perm('media_app.manage_media'):
+                return True
+            if user.is_authenticated and 'Admins' in set(user.groups.values_list('name', flat=True)):
+                return True
+        except Exception:
+            pass
         return obj.uploader == request.user
 
 
@@ -28,7 +34,14 @@ class MediaViewSet(viewsets.ModelViewSet):
 
     def destroy(self, request, *args, **kwargs):
         obj = self.get_object()
-        if obj.uploader != request.user and not request.user.is_staff:
+        if obj.uploader != request.user:
+            try:
+                if request.user.is_authenticated and request.user.has_perm('media_app.manage_media'):
+                    return super().destroy(request, *args, **kwargs)
+                if request.user.is_authenticated and 'Admins' in set(request.user.groups.values_list('name', flat=True)):
+                    return super().destroy(request, *args, **kwargs)
+            except Exception:
+                pass
             return Response({'detail':'Not allowed'}, status=status.HTTP_403_FORBIDDEN)
         return super().destroy(request, *args, **kwargs)
 
@@ -122,11 +135,19 @@ def media_edit_view(request, pk):
 
         raise Http404("Media not found")
 
-    # only uploader or staff can edit
+    # only uploader or staff-equivalent can edit
     if not request.user.is_authenticated:
         return HttpResponseForbidden()
-    if m.uploader != request.user and not request.user.is_staff:
-        return HttpResponseForbidden()
+    if m.uploader != request.user:
+        try:
+            if request.user.is_authenticated and request.user.has_perm('media_app.manage_media'):
+                pass
+            elif request.user.is_authenticated and 'Admins' in set(request.user.groups.values_list('name', flat=True)):
+                pass
+            else:
+                return HttpResponseForbidden()
+        except Exception:
+            return HttpResponseForbidden()
 
     if request.method == 'POST':
         title = request.POST.get('title')
@@ -145,11 +166,19 @@ def media_delete_view(request, pk):
 
         raise Http404("Media not found")
 
-    # only uploader or staff can delete
+    # only uploader or staff-equivalent can delete
     if not request.user.is_authenticated:
         return HttpResponseForbidden()
-    if m.uploader != request.user and not request.user.is_staff:
-        return HttpResponseForbidden()
+    if m.uploader != request.user:
+        try:
+            if request.user.is_authenticated and request.user.has_perm('media_app.manage_media'):
+                pass
+            elif request.user.is_authenticated and 'Admins' in set(request.user.groups.values_list('name', flat=True)):
+                pass
+            else:
+                return HttpResponseForbidden()
+        except Exception:
+            return HttpResponseForbidden()
 
     if request.method == 'POST':
         m.delete()

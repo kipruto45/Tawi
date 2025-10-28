@@ -50,7 +50,7 @@ def qrcodes_delete_view(request, pk):
 def qrcode_history_view(request):
     return redirect('/qrcodes/')
 
-def noop(request):
+def noop(request, *args, **kwargs):
     return HttpResponse('ok')
 
 def my_trees_view(request):

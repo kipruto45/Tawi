@@ -14,7 +14,20 @@ class IsStaffOrReadOnly(permissions.BasePermission):
     def has_permission(self, request, view):
         if request.method in ('GET', 'HEAD', 'OPTIONS'):
             return True
-        return request.user and request.user.is_authenticated and request.user.is_staff
+        try:
+            # Prefer explicit permission checks over `is_staff`. Keep
+            # compatibility by accepting Admins group membership.
+            user = request.user
+            if not (user and user.is_authenticated):
+                return False
+            if user.has_perm('trees.manage_trees'):
+                return True
+            groups = set(user.groups.values_list('name', flat=True))
+            if 'Admins' in groups:
+                return True
+            return False
+        except Exception:
+            return False
 
 class TreeViewSet(viewsets.ModelViewSet):
     queryset = Tree.objects.all()
@@ -23,8 +36,18 @@ class TreeViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['post'], url_path='bulk_create')
     def bulk_create(self, request):
-        # only allow staff to bulk create
-        if not request.user.is_staff:
+        # only allow staff or users with trees.manage_trees permission to bulk create
+        user = request.user
+        try:
+            allowed = False
+            if user and user.is_authenticated:
+                if user.has_perm('trees.manage_trees'):
+                    allowed = True
+                elif 'Admins' in set(user.groups.values_list('name', flat=True)):
+                    allowed = True
+            if not allowed:
+                return Response({'detail': 'forbidden'}, status=status.HTTP_403_FORBIDDEN)
+        except Exception:
             return Response({'detail': 'forbidden'}, status=status.HTTP_403_FORBIDDEN)
         # support file upload with dry_run
         dry = request.query_params.get('dry_run') in ('1', 'true', 'True')

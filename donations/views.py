@@ -24,6 +24,43 @@ def _get_donation_queryset():
 
 def donation_list(request):
     """Render the donations list page. If a Donation model is present use it, otherwise pass an empty list."""
+    # Restrict this page so admin users (staff/superuser or users with
+    # role=='admin') are redirected away. The page should be visible to
+    # all other users (including anonymous visitors).
+    try:
+        user = request.user
+    except Exception:
+        user = None
+
+    try:
+        is_admin = False
+        if user and getattr(user, 'is_authenticated', False):
+            try:
+                if user.has_perm('donations.view_admin_donations'):
+                    is_admin = True
+                else:
+                    # some installations store a role string on the user
+                    if getattr(user, 'role', None) == 'admin':
+                        is_admin = True
+                    elif 'Admins' in set(user.groups.values_list('name', flat=True)):
+                        is_admin = True
+            except Exception:
+                # fallback to legacy checks
+                if getattr(user, 'is_superuser', False) or getattr(user, 'is_staff', False):
+                    is_admin = True
+        if is_admin:
+            # redirect admins to the admin dashboard to keep donation flows
+            # separate from regular user donations.
+            from django.shortcuts import redirect
+            try:
+                return redirect('admin_dashboard')
+            except Exception:
+                # fallback to the namespaced dashboard view
+                return redirect('dashboard:dashboard')
+    except Exception:
+        # if anything goes wrong determining admin status, continue and
+        # render the donations list to avoid blocking users unintentionally.
+        pass
     qs = _get_donation_queryset()
     # if qs is a Django queryset, use select_related for donor to reduce DB hits
     try:

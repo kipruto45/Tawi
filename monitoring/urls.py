@@ -22,3 +22,6 @@ urlpatterns = [
     path('web/detail/<int:pk>/', views.monitoring_detail_view, name='monitoring_delete'),
     path('', include(router.urls)),
 ]
+
+# Define namespace so templates can reverse 'monitoring:...'
+app_name = 'monitoring'

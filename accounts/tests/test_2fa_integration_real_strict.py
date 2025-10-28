@@ -68,35 +68,35 @@ class TwoFactorIntegrationRealStrictTest(TestCase):
         token = m.group(1)
 
         # collect management form fields from resp and post token
-            # Collect management form hidden fields from the response context if available
-            post_data = {}
-            try:
-                wizard = resp.context['wizard']
-                mgmt = wizard.management_form
-                for name in mgmt.fields:
-                    try:
-                        post_data[name] = mgmt[name].value()
-                    except Exception:
-                        post_data[name] = mgmt.initial.get(name, '')
-            except Exception:
-                hidden_inputs = re.findall(r'<input[^>]+type="hidden"[^>]+>', resp.content.decode('utf-8'))
-                for inp in hidden_inputs:
-                    name_m = re.search(r'name="([^"]+)"', inp)
-                    val_m = re.search(r'value="([^"]*)"', inp)
-                    if name_m:
-                        post_data[name_m.group(1)] = val_m.group(1) if val_m else ''
-
-            # Merge any remaining hidden inputs and set the token
-            hidden_inputs_all = re.findall(r'<input[^>]+type="hidden"[^>]+>', resp.content.decode('utf-8'))
-            for inp in hidden_inputs_all:
+        # Collect management form hidden fields from the response context if available
+        post_data = {}
+        try:
+            wizard = resp.context['wizard']
+            mgmt = wizard.management_form
+            for name in mgmt.fields:
+                try:
+                    post_data[name] = mgmt[name].value()
+                except Exception:
+                    post_data[name] = mgmt.initial.get(name, '')
+        except Exception:
+            hidden_inputs = re.findall(r'<input[^>]+type="hidden"[^>]+>', resp.content.decode('utf-8'))
+            for inp in hidden_inputs:
                 name_m = re.search(r'name="([^"]+)"', inp)
                 val_m = re.search(r'value="([^"]*)"', inp)
-                if name_m and name_m.group(1) not in post_data:
+                if name_m:
                     post_data[name_m.group(1)] = val_m.group(1) if val_m else ''
 
-            post_data['token'] = token
+        # Merge any remaining hidden inputs and set the token
+        hidden_inputs_all = re.findall(r'<input[^>]+type="hidden"[^>]+>', resp.content.decode('utf-8'))
+        for inp in hidden_inputs_all:
+            name_m = re.search(r'name="([^"]+)"', inp)
+            val_m = re.search(r'value="([^"]*)"', inp)
+            if name_m and name_m.group(1) not in post_data:
+                post_data[name_m.group(1)] = val_m.group(1) if val_m else ''
 
-            resp2 = client.post(login_url, post_data, follow=True)
+        post_data['token'] = token
+
+        resp2 = client.post(login_url, post_data, follow=True)
         self.assertEqual(resp2.status_code, 200)
         user_after = resp2.wsgi_request.user
         self.assertTrue(user_after.is_authenticated)

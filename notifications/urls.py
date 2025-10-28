@@ -3,6 +3,9 @@ from rest_framework.routers import DefaultRouter
 from .views import NotificationViewSet
 from . import views
 
+# Provide an app_name so the app can be included with an explicit namespace
+app_name = 'notifications'
+
 router = DefaultRouter()
 router.register(r'', NotificationViewSet, basename='notifications')
 

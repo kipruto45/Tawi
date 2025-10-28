@@ -2,6 +2,7 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.contrib.auth import views as auth_views
+from django.views.generic import TemplateView
 from rest_framework import routers
 from accounts.views import UserViewSet
 from accounts.views import register as accounts_register, guest_dashboard as accounts_guest_dashboard, profile_view as accounts_profile, profile_edit_view as accounts_profile_edit
@@ -15,16 +16,18 @@ from feedback.views import FeedbackViewSet
 from reports.views import summary_stats
 from reports import views as reports_views
 from reports.views_api import GeneratedReportViewSet
-from dashboard.views import dashboard, dashboard_admin, dashboard_field, dashboard_partner, dashboard_community, dashboard_analytics, dashboard_map, dashboard_guest, assigned_tasks, my_contributions, my_hours
-from core.views import core_dashboard, core_analytics
+from dashboard.views import dashboard, dashboard_admin, dashboard_field, dashboard_partner, dashboard_community, dashboard_analytics, dashboard_map, dashboard_guest, assigned_tasks, my_contributions, my_hours, insights_dashboard, dashboard_volunteer, volunteers_list, dashboard_project
+from core.views import core_dashboard, core_analytics, about as core_about
 from core.views_api import PostViewSet, SiteConfigViewSet
 from monitoring import views as monitoring_views
 from events import views as events_views
 from trees import web_public_views as trees_public_views
 from notifications import views as notifications_views
+from locations import views as locations_views
 from .fallback_views import noop, my_trees_view, my_tasks_view, role_management_view
 import tawi_project.fallback_views as fallback_views
 from accounts import views as accounts_views
+from donations import views as donations_views
 try:
     from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 except Exception:
@@ -47,10 +50,15 @@ router.register(r'reports/generated', GeneratedReportViewSet)
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/', include(router.urls)),
-    path('api/media/', include('media_app.urls')),
+    # Include Django REST framework built-in login/logout views under the
+    # 'rest_framework' namespace so templates that call
+    # {% url 'rest_framework:login' %} / {% url 'rest_framework:logout' %}
+    # will resolve correctly (used by the browsable API and some templates).
+    path('api-auth/', include(('rest_framework.urls', 'rest_framework'), namespace='rest_framework')),
+    path('api/media/', include(('media_app.urls', 'media_app'), namespace='api_media')),
     path('api/qrcodes/', include('qrcodes.urls')),
-    path('api/notifications/', include('notifications.urls')),
-    path('api/reports/', include('reports.urls')),
+    path('api/notifications/', include(('notifications.urls', 'notifications'), namespace='api_notifications')),
+    path('api/reports/', include(('reports.urls', 'reports'), namespace='api_reports')),
     path('api/reports/summary/', summary_stats, name='reports-summary'),
     # Include the dashboard app with an explicit namespace so templates
     # that use the 'dashboard:' namespaced reverses resolve correctly.
@@ -64,6 +72,41 @@ urlpatterns = [
     path('trees/all/', trees_public_views.trees_planted_public, name='trees'),
     path('trees/planted/', trees_public_views.trees_planted_public, name='trees_planted_public'),
     # Note: templates should use the 'trees:' namespace (e.g. {% url 'trees:tree_list' %})
+    # Backwards-compatible top-level dashboard aliases used by some templates/tests
+    path('admin-dashboard/', dashboard_admin, name='admin_dashboard'),
+    path('dashboard/field/', dashboard_field, name='dashboard_field'),
+    path('dashboard/volunteer/', dashboard_volunteer, name='dashboard_volunteer'),
+    path('dashboard/partner/', dashboard_partner, name='dashboard_partner'),
+    path('dashboard/admin/', dashboard_admin, name='dashboard_admin'),
+    path('dashboard/field/', dashboard_field, name='dashboard_field'),
+    path('dashboard/guest/', dashboard_guest, name='dashboard_guest'),
+    path('dashboard/partner/', dashboard_partner, name='dashboard_partner'),
+    path('dashboard/projectmanagement/', dashboard_admin, name='dashboard_projectmanagement'),
+    path('dashboard/projectmanager/', dashboard_admin, name='dashboard_projectmanager'),
+    path('dashboard/volunteer/', dashboard_volunteer, name='dashboard_volunteer'),
+    path('tasks/assigned/', assigned_tasks, name='assigned_tasks'),
+    path('volunteer/contributions/', my_contributions, name='my_contributions'),
+    path('volunteer/hours/', my_hours, name='my_hours'),
+    path('volunteers/list/', volunteers_list, name='volunteers_list'),
+    # Delegate core marketing/static pages to the core templates (prefix with 'core/')
+    path('landing/', TemplateView.as_view(template_name='core/landing.html'), name='landing'),
+    path('index/', TemplateView.as_view(template_name='core/index.html'), name='index'),
+    path('about/', TemplateView.as_view(template_name='core/about.html'), name='about'),
+    path('contact/', TemplateView.as_view(template_name='core/contact.html'), name='contact'),
+    path('learn-more/', TemplateView.as_view(template_name='core/learn_more.html'), name='learn_more'),
+    path('messages/', TemplateView.as_view(template_name='core/message_list.html'), name='message_list'),
+    path('partners/', TemplateView.as_view(template_name='core/partner_list.html'), name='partner_list'),
+    path('privacy/', TemplateView.as_view(template_name='core/privacy.html'), name='privacy'),
+    path('profile/', TemplateView.as_view(template_name='core/profile.html'), name='profile'),
+    path('terms/', TemplateView.as_view(template_name='core/terms.html'), name='terms'),
+    
+    # Backwards-compatible top-level aliases for dashboard sub-pages used by
+    # legacy templates that reverse without the 'dashboard:' namespace.
+    path('dashboard/volunteers/', volunteers_list, name='volunteers_list'),
+    path('partner/contributions/', my_contributions, name='my_contributions'),
+    path('dashboard/project/', dashboard_project, name='dashboard_project'),
+    path('assigned/tasks/', assigned_tasks, name='assigned_tasks'),
+    path('insights-dashboard/', insights_dashboard, name='insights_dashboard'),
     # Expose a few accounts names at the top-level name registry so legacy template
     # and tests that call reverse('register') or reverse('guest_dashboard') will
     # resolve successfully. Place these before including core.urls so they take
@@ -73,6 +116,12 @@ urlpatterns = [
     path('volunteer-signup/', accounts_register, name='volunteer_sign_up'),
     path('profile/', accounts_profile, name='profile'),
     path('profile/edit/', accounts_profile_edit, name='profile_edit'),
+    # Top-level non-namespaced alias for the public About page. Some legacy
+    # templates/tests reverse 'about' without the 'core:' namespace; exposing
+    # this alias keeps those reverses working while core.urls remains
+    # namespaced under 'core'. Placed before including core.urls so it
+    # takes precedence.
+    path('about/', core_about, name='about'),
     path('', include(('core.urls', 'core'), namespace='core')),
     # Media app public gallery at top-level so templates can use reverse('media_list')
     # and templates that reference the media_app namespace (e.g. {% url 'media_app:media_list' %})
@@ -94,6 +143,9 @@ urlpatterns = [
     path('users/', accounts_views.user_list, name='user_list'),
     path('my/hours/', my_hours, name='my_hours'),
     path('feedback/', include(('feedback.urls', 'feedback'), namespace='feedback')),
+    # Expose a top-level, non-namespaced alias so legacy templates that
+    # reverse 'donations' (without the 'donations:' namespace) continue to work.
+    path('donations/', donations_views.donation_list, name='donations'),
     # (top-level aliases moved earlier in the file)
     path('accounts/api/role_check/', accounts_api_role_check, name='api_role_check'),
     path('accounts/api/change_role/', accounts_api_change_role, name='api_change_role'),
@@ -103,6 +155,9 @@ urlpatterns = [
     path('locations/', include(('locations.urls', 'locations'), namespace='locations')),
     # Convenience route for the monitoring web dashboard used by the admin sidebar
     path('monitoring/dashboard/', monitoring_views.monitoring_dashboard_view, name='monitoring_dashboard'),
+    # Include monitoring app URLs under the 'monitoring' namespace so templates
+    # that use the monitoring:... names will resolve correctly.
+    path('monitoring/', include(('monitoring.urls', 'monitoring'), namespace='monitoring')),
     # Explicitly wire the password reset flow to use the provided templates in templates/accounts
     path('accounts/password_reset/', auth_views.PasswordResetView.as_view(
         template_name='accounts/password_reset.html',
@@ -114,9 +169,16 @@ urlpatterns = [
     path('accounts/reset/done/', auth_views.PasswordResetCompleteView.as_view(template_name='accounts/password_reset_complete.html'), name='password_reset_complete'),
     # django built-in auth views (login/logout and other auth helpers)
     path('accounts/', include('django.contrib.auth.urls')),
-    path('notifications/', include('notifications.urls')),
+    # include notifications with explicit namespace so templates can use
+    # {% url 'notifications:notifications_page' %} and related names.
+    path('notifications/', include(('notifications.urls', 'notifications'), namespace='notifications')),
     # public notifications alias for guests
     path('notifications/public/', notifications_views.notifications_public, name='notifications_public'),
+    # Backwards-compatible notification names (top-level aliases)
+    path('notifications/page/', notifications_views.notifications_page, name='notifications_page'),
+    path('notifications/mark/<int:pk>/', notifications_views.notifications_mark, name='notifications_mark'),
+    path('notifications/clear/', notifications_views.notifications_clear, name='notifications_clear'),
+    path('notifications/unmark/<int:pk>/', notifications_views.notifications_unmark, name='notifications_unmark'),
     path('qrcodes/', include('qrcodes.urls')),
     # top-level aliases for legacy template reverses (messages & qrcodes)
     path('messages/compose/', fallback_views.message_compose_view, name='message_compose'),
@@ -155,8 +217,8 @@ urlpatterns += [
     path('contributions/<int:pk>/', fallback_views.noop, name='contribution_detail'),
     path('contributions/<int:pk>/delete/', fallback_views.noop, name='contribution_delete'),
 
-    path('locations/<int:pk>/delete/', fallback_views.noop, name='delete_site'),
-    path('locations/<int:pk>/edit/', fallback_views.noop, name='edit_site'),
+    path('locations/<int:pk>/delete/', locations_views.delete_site, name='delete_site'),
+    path('locations/<int:pk>/edit/', locations_views.edit_site, name='edit_site'),
 
     path('notifications/dropdown/', lambda r: __import__('django.shortcuts').shortcuts.render(r, 'notifications/notifications_dropdown.html', {'notifications': r.user.notifications.all() if r.user.is_authenticated else []}), name='notifications_dropdown'),
     path('notifications/detail/<int:pk>/', notifications_views.notifications_page, name='notifications_detail'),

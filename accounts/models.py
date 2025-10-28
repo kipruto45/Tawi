@@ -51,4 +51,14 @@ def create_or_update_user_profile(sender, instance, created, **kwargs):
     if created:
         Profile.objects.create(user=instance)
     else:
-        instance.profile.save()
+        # Be defensive: a Profile may have been removed or not created due to
+        # earlier interrupted migrations or history operations. Use get_or_create
+        # to avoid RelatedObjectDoesNotExist exceptions during user.save()
+        try:
+            instance.profile.save()
+        except Exception:
+            try:
+                Profile.objects.get_or_create(user=instance)
+            except Exception:
+                # worst-case: ignore to avoid breaking user save paths
+                pass

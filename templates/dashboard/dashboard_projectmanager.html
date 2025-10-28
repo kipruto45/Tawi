@@ -68,8 +68,8 @@
         <div class="ml-4 text-right">
           {% if request.user.is_authenticated %}
             <p class="text-sm text-green-600">Welcome back, <span class="font-semibold text-green-800">{{ request.user.get_full_name|default:request.user.username }}</span></p>
-            {% if request.user.profile.role %}
-              <p class="text-xs text-green-500">Role: <span class="font-medium">{{ request.user.profile.role }}</span></p>
+            {% if user_profile and user_profile.role %}
+              <p class="text-xs text-green-500">Role: <span class="font-medium">{{ user_profile.role }}</span></p>
             {% endif %}
           {% else %}
             <p class="text-sm text-green-600">Welcome, Guest</p>
@@ -141,27 +141,32 @@
         <a href="{% url 'core:message_list' %}" class="p-2 rounded-md hover:bg-green-50" aria-label="Messages">
           <i data-feather="mail" class="w-5 h-5 text-green-700"></i>
         </a>
-          {# Role-aware profile link: prefer role-specific dashboards, fall back to profile view #}
+          {# Role-aware profile link: prefer is_admin, then role strings as fallback. #}
           {% if request.user.is_authenticated %}
-            {% with role=request.user.profile.role|default_if_none:"" %}
-              {% if role == 'admin' %}
-                <a href="{% url 'dashboard:dashboard_admin' %}" class="flex items-center gap-2 p-2 rounded-md hover:bg-green-50" aria-label="Profile">
-              {% elif role == 'field' or role == 'field_officer' %}
-                <a href="{% url 'dashboard:dashboard_field' %}" class="flex items-center gap-2 p-2 rounded-md hover:bg-green-50" aria-label="Profile">
-              {% elif role == 'partner' %}
-                <a href="{% url 'dashboard:dashboard_partner' %}" class="flex items-center gap-2 p-2 rounded-md hover:bg-green-50" aria-label="Profile">
-              {% elif role == 'community' %}
-                <a href="{% url 'dashboard:dashboard_community' %}" class="flex items-center gap-2 p-2 rounded-md hover:bg-green-50" aria-label="Profile">
-              {% elif role == 'analytics' %}
-                <a href="{% url 'core_analytics' %}" class="flex items-center gap-2 p-2 rounded-md hover:bg-green-50" aria-label="Profile">
-              {% else %}
-                <a href="{% url 'profile' %}" class="flex items-center gap-2 p-2 rounded-md hover:bg-green-50" aria-label="Profile">
-              {% endif %}
-            {% endwith %}
+            {% if is_admin %}
+              <a href="{% url 'dashboard:dashboard_admin' %}" class="flex items-center gap-2 p-2 rounded-md hover:bg-green-50" aria-label="Profile">
+            {% else %}
+              {% with role=user_profile.role|default_if_none:"" %}
+                {% if role == 'admin' %}
+                  <a href="{% url 'dashboard:dashboard_admin' %}" class="flex items-center gap-2 p-2 rounded-md hover:bg-green-50" aria-label="Profile">
+                {% elif role == 'field' or role == 'field_officer' %}
+                  <a href="{% url 'dashboard:dashboard_field' %}" class="flex items-center gap-2 p-2 rounded-md hover:bg-green-50" aria-label="Profile">
+                {% elif role == 'partner' %}
+                  <a href="{% url 'dashboard:dashboard_partner' %}" class="flex items-center gap-2 p-2 rounded-md hover:bg-green-50" aria-label="Profile">
+                {% elif role == 'community' %}
+                  <a href="{% url 'dashboard:dashboard_community' %}" class="flex items-center gap-2 p-2 rounded-md hover:bg-green-50" aria-label="Profile">
+                {% elif role == 'analytics' %}
+                  <a href="{% url 'core_analytics' %}" class="flex items-center gap-2 p-2 rounded-md hover:bg-green-50" aria-label="Profile">
+                {% else %}
+                  <a href="{% url 'profile' %}" class="flex items-center gap-2 p-2 rounded-md hover:bg-green-50" aria-label="Profile">
+                {% endif %}
+              {% endwith %}
+            {% endif %}
           {% else %}
             <a href="{% url 'profile' %}" class="flex items-center gap-2 p-2 rounded-md hover:bg-green-50" aria-label="Profile">
           {% endif %}
-          <img src="{{ request.user.profile.profile_image.url|default:static('img/default_profile.png') }}" alt="Profile" class="w-6 h-6 rounded-full object-cover" />
+          {% comment %}Use a plain static path as a default to avoid calling the static tag inside a filter{% endcomment %}
+          <img src="{{ user_profile.profile_image.url|default:'/static/img/default_profile.png' }}" alt="Profile" class="w-6 h-6 rounded-full object-cover" />
           <span class="sr-only">Open profile</span>
         </a>
       </div>

@@ -1,5 +1,6 @@
 from django.urls import path
 from . import views
+from tawi_project.fallback_views import my_trees_view, my_tasks_view
 
 # Application namespace used by templates and `include(..., namespace=...)`
 app_name = 'dashboard'
@@ -23,6 +24,12 @@ urlpatterns = [
     path('field/tasks/', views.assigned_tasks, name='assigned_tasks'),
     path('volunteers/', views.volunteers_list, name='volunteers_list'),
     path('volunteer/', views.dashboard_volunteer, name='dashboard_volunteer'),
+    # Provide several dashboard-scoped aliases so templates that reverse
+    # names like 'my_hours', 'my_trees' and 'my_tasks' within the
+    # dashboard namespace resolve correctly during rendering in tests.
+    path('volunteer/hours/', views.my_hours, name='my_hours'),
+    path('my/trees/', my_trees_view, name='my_trees'),
+    path('my/tasks/', my_tasks_view, name='my_tasks'),
     path('partner/contributions/', views.my_contributions, name='my_contributions'),
     path('partner/', views.dashboard_partner, name='dashboard_partner'),
     path('community/', views.dashboard_community, name='dashboard_community'),

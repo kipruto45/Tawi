@@ -38,19 +38,17 @@
     </div>
   </header>
 
-  <!-- Add New Site -->
+  <!-- Add New Site (admin only) -->
+  {% if request.user.is_authenticated and request.user.has_perm "beneficiaries.manage_sites" %}
   <div class="glass w-full max-w-4xl p-6 mb-10">
     <h2 class="text-green-700 font-semibold text-lg mb-4 flex items-center gap-2">
       <i data-feather="plus-circle" class="w-5 h-5 text-green-600"></i> Add New Site
     </h2>
-    <form method="POST" class="grid sm:grid-cols-2 gap-4">
-      {% csrf_token %}
-      <input type="text" name="location" placeholder="Location" class="border border-green-200 p-2 rounded-md focus:outline-green-400">
-      <input type="number" name="trees_needed" placeholder="Trees Needed" class="border border-green-200 p-2 rounded-md focus:outline-green-400">
-      <input type="text" name="priority" placeholder="Priority (High/Medium/Low)" class="border border-green-200 p-2 rounded-md focus:outline-green-400">
-      <button type="submit" class="btn-green sm:col-span-2">Add Site</button>
-    </form>
+    <div>
+      <a href="{% url 'locations:add_site' %}" class="btn-green">Add Site</a>
+    </div>
   </div>
+  {% endif %}
 
   <!-- Manage Planted and Needed Sites -->
   <section class="glass w-full max-w-6xl p-6 mb-8">
@@ -75,8 +73,13 @@
           <td class="px-4 py-2">{{ site.trees_needed }}</td>
           <td class="px-4 py-2">{{ site.status }}</td>
           <td class="px-4 py-2 text-right space-x-2">
-            <a href="{% url 'edit_site' site.id %}" class="btn-yellow text-xs">Edit</a>
-            <a href="{% url 'delete_site' site.id %}" class="btn-red text-xs" onclick="return confirm('Are you sure you want to delete this site?')">Delete</a>
+            {% if request.user.is_authenticated and request.user.has_perm "beneficiaries.manage_sites" %}
+              <a href="{% url 'locations:edit_site' site.id %}" class="btn-yellow text-xs">Edit</a>
+              <form method="post" action="{% url 'locations:delete_site' site.id %}" style="display:inline;">
+                {% csrf_token %}
+                <button type="submit" class="btn-red text-xs" onclick="return confirm('Are you sure you want to delete this site?')">Delete</button>
+              </form>
+            {% endif %}
           </td>
         </tr>
         {% empty %}

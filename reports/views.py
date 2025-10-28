@@ -18,7 +18,9 @@ def report_create_view(request):
         if form.is_valid():
             data = form.cleaned_data
             rpt = GeneratedReport.objects.create(name=data['name'], report_type=data['report_type'], filters={})
-            return redirect('report-detail', pk=rpt.pk)
+            # Use the namespaced URL so reversing works whether the app is included
+            # with a namespace (recommended) or via top-level aliases.
+            return redirect('reports:report_detail', pk=rpt.pk)
     else:
         form = CreateReportForm()
     return render(request, 'reports/report_create.html', {'form': form})

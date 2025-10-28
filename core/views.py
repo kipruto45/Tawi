@@ -86,7 +86,8 @@ def privacy(request):
 def core_dashboard(request):
     # simple wrapper for admin dashboard
     from reports.views import summary_stats
-    resp = summary_stats(request._request)
+    # summary_stats is a DRF view; pass the Django request object directly.
+    resp = summary_stats(request)
     summary = resp.data if hasattr(resp, 'data') else {}
     return render(request, 'core/core_dashboard.html', {'summary': summary})
 
