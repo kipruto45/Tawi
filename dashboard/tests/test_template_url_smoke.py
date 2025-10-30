@@ -49,8 +49,8 @@ class TemplateURLSmokeTests(TestCase):
                         url_names.add(name)
 
         # Sanity: we should find at least some names; otherwise the test might be misconfigured
-    # Use f-string and escape braces so literal '{% url "name" %}' is preserved.
-    self.assertTrue(url_names, f"No simple {{% url \"name\" %}} tags found in template dirs: {template_dirs}")
+        # Use f-string and escape braces so literal '{% url "name" %}' is preserved.
+        self.assertTrue(url_names, f"No simple {{% url \"name\" %}} tags found in template dirs: {template_dirs}")
 
         for name in sorted(url_names):
             with self.subTest(url_name=name):

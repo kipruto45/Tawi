@@ -1,5 +1,10 @@
 from django.shortcuts import render
+import logging
 from django.contrib.auth.decorators import user_passes_test
+from django.contrib.auth.views import redirect_to_login
+from django.conf import settings
+from django.http import HttpResponseForbidden
+from functools import wraps
 from django.core.cache import cache
 from .services.dashboard_service import get_dashboard_summary
 from django.contrib.auth import get_user_model
@@ -13,14 +18,89 @@ def dashboard(request):
     return dashboard_admin(request)
 
 
+def role_required(*allowed_roles):
+    """Decorator that enforces a user's role membership.
+
+    Usage: @role_required('admin') or @role_required('field_officer', 'admin')
+
+    - If the user is not authenticated -> redirect to login.
+    - If authenticated but not in allowed_roles -> render 403 template.
+    - Superusers bypass the check.
+    """
+    def _decorator(view_func):
+        @wraps(view_func)
+        def _wrapped(request, *args, **kwargs):
+            logger = logging.getLogger('dashboard.access')
+            try:
+                if not request.user.is_authenticated:
+                    logger.info('role_required_unauthenticated', extra={'path': request.get_full_path(), 'allowed': allowed_roles})
+                    return redirect_to_login(request.get_full_path(), settings.LOGIN_URL)
+            except Exception:
+                logger.exception('error_checking_auth_state_in_role_required')
+                return redirect_to_login(request.get_full_path(), settings.LOGIN_URL)
+
+            # superusers allowed
+            try:
+                if getattr(request.user, 'is_superuser', False):
+                    return view_func(request, *args, **kwargs)
+            except Exception:
+                # ignore and continue to role check
+                pass
+
+            # check role attribute
+            try:
+                user_role = getattr(request.user, 'role', None)
+                # allow explicit 'admin' role to bypass all role checks as a convenience
+                if user_role == 'admin':
+                    return view_func(request, *args, **kwargs)
+
+                # normalize simple aliases
+                alias_map = {'field': 'field_officer', 'partner_institution': 'partner'}
+                norm = alias_map.get(user_role, user_role)
+                if norm in allowed_roles:
+                    return view_func(request, *args, **kwargs)
+            except Exception:
+                logger.exception('error_checking_user_role')
+
+            # check groups as fallback
+            try:
+                groups = set(request.user.groups.values_list('name', flat=True))
+                for r in allowed_roles:
+                    if r in groups:
+                        return view_func(request, *args, **kwargs)
+            except Exception:
+                logger.exception('error_checking_groups_in_role_required')
+
+            # finally, no match -> forbidden
+            try:
+                logger.warning('role_required_forbidden', extra={'username': getattr(request.user, 'username', None), 'allowed': allowed_roles, 'role': getattr(request.user, 'role', None)})
+            except Exception:
+                logger.warning('role_required_forbidden')
+            return render(request, 'dashboard/forbidden.html', status=403, context={'username': getattr(request.user, 'username', None), 'role': getattr(request.user, 'role', None)})
+
+        return _wrapped
+    return _decorator
+
+
 def _can_view_admin(user):
     try:
-        return bool(user and user.is_authenticated and (user.is_superuser or user.has_perm('dashboard.view_admin_dashboard')))
+        # allow explicit 'admin' role, superusers, or users with the specific
+        # permission
+        role = getattr(user, 'role', None)
+        return bool(
+            user
+            and user.is_authenticated
+            and (
+                getattr(user, 'is_superuser', False)
+                or user.has_perm('dashboard.view_admin_dashboard')
+                or role == 'admin'
+            )
+        )
     except Exception:
         return False
 
 
-@user_passes_test(_can_view_admin)
+@role_required('admin')
 def dashboard_admin(request):
     """Render admin dashboard using aggregated metrics from the service layer.
 
@@ -29,6 +109,47 @@ def dashboard_admin(request):
     optional apps (notifications, monitoring, partners) do not cause
     TemplateSyntaxError or 500 responses during rendering.
     """
+    # Authentication/authorization handling:
+    # - If the user is not authenticated, redirect to the login page.
+    # - If the user is authenticated but lacks the admin permission, return 403
+    #   rather than redirecting back to login (which can cause confusing UX).
+    logger = logging.getLogger('dashboard.access')
+
+    try:
+        if not request.user.is_authenticated:
+            logger.info('unauthenticated_access_attempt', extra={'path': request.get_full_path()})
+            return redirect_to_login(request.get_full_path(), settings.LOGIN_URL)
+    except Exception:
+        # If anything goes wrong reading auth state, redirect to login as a
+        # conservative default.
+        logger.exception('error_checking_auth_state_redirecting_to_login')
+        return redirect_to_login(request.get_full_path(), settings.LOGIN_URL)
+
+    try:
+        if not _can_view_admin(request.user):
+            # Authenticated but unauthorized: render a friendly 403 page and
+            # log the occurrence to assist debugging without exposing secrets.
+            try:
+                logger.warning('forbidden_admin_access', extra={
+                    'username': getattr(request.user, 'username', None),
+                    'role': getattr(request.user, 'role', None),
+                    'is_superuser': getattr(request.user, 'is_superuser', False),
+                })
+            except Exception:
+                logger.warning('forbidden_admin_access (failed to read user attrs)')
+            return render(request, 'dashboard/forbidden.html', status=403, context={
+                'username': getattr(request.user, 'username', None),
+                'role': getattr(request.user, 'role', None),
+            })
+    except Exception:
+        # On unexpected errors during permission checks, return forbidden
+        # to avoid redirecting an authenticated user back to login.
+        logger.exception('error_during_permission_check_for_admin')
+        return render(request, 'dashboard/forbidden.html', status=403, context={
+            'username': getattr(request.user, 'username', None),
+            'role': getattr(request.user, 'role', None),
+        })
+
     # Base summary context (provides total_trees, total_volunteers, etc.)
     ctx = _build_summary_context(request)
 
@@ -82,6 +203,7 @@ def dashboard_admin(request):
     return render(request, 'dashboard/dashboard_admin.html', ctx)
 
 
+@role_required('field_officer')
 def dashboard_field(request):
     # Build context using the common dashboard summary service so field officers
     # see counts scoped to their role where applicable.
@@ -228,6 +350,7 @@ def my_hours(request):
     return render(request, 'dashboard/my_hours.html', {'hours': hours})
 
 
+@role_required('partner')
 def dashboard_partner(request):
     ctx = _build_summary_context(request)
     ctx['tasks'] = _get_tasks_for_user(request.user)
@@ -304,6 +427,7 @@ def dashboard_guest(request):
     return render(request, 'dashboard/dashboard_guest.html', context)
 
 
+@role_required('volunteer')
 def dashboard_volunteer(request):
     """Render a volunteer-specific dashboard view with summary context.
 
@@ -316,6 +440,7 @@ def dashboard_volunteer(request):
     return render(request, 'dashboard/dashboard_volunteer.html', ctx)
 
 
+@role_required('project_manager')
 def dashboard_project(request):
     ctx = _build_summary_context(request)
     # Render the project manager specific dashboard template

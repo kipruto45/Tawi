@@ -25,6 +25,6 @@ class DonationsURLTests(TestCase):
         except FileNotFoundError:
             self.skipTest('dashboard_admin template not present in repository')
 
-    # The dashboard template contains the Django template tag rather than a rendered URL,
-    # so assert the template tag itself is present.
-    self.assertIn("{% url 'donations:donations' %}", content)
+        # The dashboard template contains the Django template tag rather than a rendered URL,
+        # so assert the template tag itself is present.
+        self.assertIn("{% url 'donations:donations' %}", content)

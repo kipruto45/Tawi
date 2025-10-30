@@ -87,4 +87,3 @@ class LocationsViewTests(TestCase):
         res = self.client.get(reverse('locations:view_site', args=[site.pk]))
         self.assertEqual(res.status_code, 200)
         self.assertTemplateUsed(res, 'locations/view_site.html')
-*** End Patch
