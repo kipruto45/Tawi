@@ -41,7 +41,7 @@
         <a href="{% url 'media_app:media_list' %}" class="sidebar-link"><i data-feather="list" class="w-4 h-4"></i> Media List</a>
         <a href="{% url 'media_app:media_gallery' %}" class="sidebar-link"><i data-feather="grid" class="w-4 h-4"></i> Gallery</a>
         <a href="{% url 'media_app:media_upload' %}" class="sidebar-link"><i data-feather="upload" class="w-4 h-4"></i> Upload Media</a>
-  {% include 'includes/logout_form.html' %}
+        <a href="{% url 'rest_framework:logout' %}" class="sidebar-link text-red-600 hover:bg-red-100 hover:text-red-700"><i data-feather="log-out" class="w-4 h-4"></i> Logout</a>
       </nav>
     </div>
   </aside>

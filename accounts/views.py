@@ -505,49 +505,6 @@ def post_login_redirect(request):
     except NoReverseMatch:
         return redirect('dashboard:dashboard')
 
-
-def debug_session_info(request):
-    """Dev-only endpoint that returns basic session/auth info to help
-    diagnose login/session persistence issues.
-
-    Access control: only staff users or when DEBUG=True are allowed to use
-    this in order to avoid exposing user info in production.
-    """
-    from django.http import JsonResponse
-    try:
-        allowed = getattr(settings, 'DEBUG', False) or (request.user.is_authenticated and getattr(request.user, 'is_staff', False))
-    except Exception:
-        allowed = getattr(settings, 'DEBUG', False)
-
-    if not allowed:
-        return redirect('accounts:login')
-
-    try:
-        session_key = getattr(request.session, 'session_key', None)
-    except Exception:
-        session_key = None
-
-    try:
-        username = getattr(request.user, 'username', None)
-        role = getattr(request.user, 'role', None)
-        is_auth = request.user.is_authenticated
-        groups = list(request.user.groups.values_list('name', flat=True)) if is_auth else []
-    except Exception:
-        username = None
-        role = None
-        is_auth = False
-        groups = []
-
-    data = {
-        'is_authenticated': bool(is_auth),
-        'username': username,
-        'role': role,
-        'groups': groups,
-        'session_key': session_key,
-        'cookies': {k: request.COOKIES.get(k) for k in ('sessionid', settings.SESSION_COOKIE_NAME) if request.COOKIES.get(k)},
-    }
-    return JsonResponse(data)
-
 @api_view(['POST'])
 @permission_classes([permissions.AllowAny])
 def api_register(request):

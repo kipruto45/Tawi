@@ -81,9 +81,6 @@ def _notifications_dropdown(request):
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/', include(router.urls)),
-    # Provide a compatibility logout endpoint that accepts GET before mounting
-    # the full rest_framework urls to avoid 405 responses in smoke tests.
-    path('api-auth/logout/', fallback_views.rest_framework_logout_compat, name='rest_framework:logout'),
     # Include Django REST framework built-in login/logout views under the
     # 'rest_framework' namespace so templates that call
     # {% url 'rest_framework:login' %} / {% url 'rest_framework:logout' %}
@@ -169,8 +166,6 @@ urlpatterns = [
     # aliases (e.g. 'guest_dashboard') to resolve to the routes we want
     # during tests and in templates.
     path('accounts/', include(('accounts.urls', 'accounts'), namespace='accounts')),
-    # Compatibility logout that accepts GET for legacy templates and tests.
-    path('accounts/logout/', fallback_views.logout_compat, name='logout'),
     # fallback aliases used by templates in tests
     path('role-management/', role_management_view, name='role_management'),
     path('my/tasks/simple/', my_tasks_view, name='my_tasks'),
@@ -187,13 +182,7 @@ urlpatterns = [
     path('accounts/api/change_role/', accounts_api_change_role, name='api_change_role'),
     path('accounts/api/register/', accounts_api_register, name='api_register'),
     path('accounts/api/profile/', accounts_api_profile, name='api_profile'),
-    # Debug-only session info endpoint to help diagnose login/session issues.
-    # Exposed only when DEBUG is True or accessed by staff users (view enforces).
-    path('debug/session-info/', accounts_views.debug_session_info, name='debug_session_info'),
     path('donations/', include(('donations.urls', 'donations'), namespace='donations')),
-    # Backwards-compatible alias used by templates/tests that expect a 'donate' view name.
-    # Map a safe placeholder GET route to the donation_list view to avoid NoReverseMatch.
-    path('donations/donate/', donations_views.donation_list, name='donate'),
     path('locations/', include(('locations.urls', 'locations'), namespace='locations')),
     # Convenience route for the monitoring web dashboard used by the admin sidebar
     path('monitoring/dashboard/', monitoring_views.monitoring_dashboard_view, name='monitoring_dashboard'),

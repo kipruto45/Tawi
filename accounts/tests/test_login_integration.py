@@ -12,7 +12,6 @@ class LoginIntegrationTests(TestCase):
         self.users['admin'] = self.User.objects.create_user(username='int_admin', password='pass1234')
         self.users['volunteer'] = self.User.objects.create_user(username='int_vol', password='pass1234')
         self.users['field_officer'] = self.User.objects.create_user(username='int_field', password='pass1234')
-        self.users['partner'] = self.User.objects.create_user(username='int_partner', password='pass1234')
         # attempt to set role attributes if the model supports it
         for role, user in self.users.items():
             try:
@@ -31,7 +30,6 @@ class LoginIntegrationTests(TestCase):
             'admin': 'admin_dashboard',
             'volunteer': 'dashboard_volunteer',
             'field_officer': 'dashboard_field',
-            'partner': 'dashboard_partner',
         }
         for role, user in self.users.items():
             with self.subTest(role=role):

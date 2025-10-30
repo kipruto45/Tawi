@@ -22,7 +22,6 @@ urlpatterns = [
     # alias used in some templates
     path('field/officer/', views.dashboard_field, name='dashboard_field_officer'),
     path('field/tasks/', views.assigned_tasks, name='assigned_tasks'),
-    path('tasks/add/', views.task_add, name='task_add'),
     path('volunteers/', views.volunteers_list, name='volunteers_list'),
     path('volunteer/', views.dashboard_volunteer, name='dashboard_volunteer'),
     # Provide several dashboard-scoped aliases so templates that reverse
