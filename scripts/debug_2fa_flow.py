@@ -71,7 +71,6 @@ print('GET', login_url)
 get_resp = client.get(login_url)
 print('status', get_resp.status_code)
 # collect hidden inputs
-import re
 hidden_inputs = re.findall(r'<input[^>]+type="hidden"[^>]+>', get_resp.content.decode('utf-8'))
 print('hidden inputs count', len(hidden_inputs))
 initial_post = {}

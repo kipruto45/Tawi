@@ -1,7 +1,7 @@
 from rest_framework import viewsets, permissions
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from django.db.models import Avg, Count
+from django.db.models import Avg, Count, F
 from django.shortcuts import render, get_object_or_404, redirect
 from .models import FollowUp, MonitoringReport
 from .serializers import FollowUpSerializer, MonitoringReportSerializer, MonitoringStatsSerializer
@@ -40,13 +40,13 @@ class MonitoringReportViewSet(viewsets.ModelViewSet):
         surv_qs = qs.exclude(total_planted=0)
         avg_survival = None
         if surv_qs.exists():
-            avg_survival = surv_qs.aggregate(avg=Avg((models.F('surviving')*1.0)/models.F('total_planted')*100))['avg']
+            avg_survival = surv_qs.aggregate(avg=Avg((F('surviving')*1.0)/F('total_planted')*100))['avg']
         # monthly trends (simple count & avg survival per month)
         from django.db.models.functions import TruncMonth
-        monthly = qs.annotate(month=TruncMonth('date')).values('month').annotate(count=Count('id'), avg_surv=Avg((models.F('surviving')*1.0)/models.F('total_planted')*100)).order_by('month')[:24]
+        monthly = qs.annotate(month=TruncMonth('date')).values('month').annotate(count=Count('id'), avg_surv=Avg((F('surviving')*1.0)/F('total_planted')*100)).order_by('month')[:24]
         monthly_trends = [{'month': m['month'].strftime('%Y-%m') if m['month'] else None, 'count': m['count'], 'avg_survival': round(m['avg_surv'] or 0,2)} for m in monthly]
         # top sites by avg survival
-        top = qs.values('site__id', 'site__name').annotate(avg_surv=Avg((models.F('surviving')*1.0)/models.F('total_planted')*100)).order_by('-avg_surv')[:10]
+        top = qs.values('site__id', 'site__name').annotate(avg_surv=Avg((F('surviving')*1.0)/F('total_planted')*100)).order_by('-avg_surv')[:10]
         top_sites = [{'site_id': t['site__id'], 'site_name': t['site__name'], 'avg_survival': round(t['avg_surv'] or 0,2)} for t in top]
         payload = {
             'total_reports': total_reports,

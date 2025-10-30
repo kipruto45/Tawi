@@ -3,11 +3,20 @@ from django.urls import path, include
 from django.conf import settings
 from django.contrib.auth import views as auth_views
 from django.views.generic import TemplateView
+from django.shortcuts import render
 from rest_framework import routers
 from accounts.views import UserViewSet
-from accounts.views import register as accounts_register, guest_dashboard as accounts_guest_dashboard, profile_view as accounts_profile, profile_edit_view as accounts_profile_edit
-from accounts.views import api_role_check as accounts_api_role_check, api_change_role as accounts_api_change_role
-from accounts.views import api_register as accounts_api_register, api_profile as accounts_api_profile
+from accounts.views import (
+    register as accounts_register,
+    profile_view as accounts_profile,
+    profile_edit_view as accounts_profile_edit,
+)
+from accounts.views import (
+    api_role_check as accounts_api_role_check,
+    api_change_role as accounts_api_change_role,
+    api_register as accounts_api_register,
+    api_profile as accounts_api_profile,
+)
 from beneficiaries.views import BeneficiaryViewSet, PlantingSiteViewSet
 from trees.views import TreeViewSet, TreeUpdateViewSet, TreeSpeciesViewSet
 from monitoring.views import FollowUpViewSet
@@ -16,7 +25,19 @@ from feedback.views import FeedbackViewSet
 from reports.views import summary_stats
 from reports import views as reports_views
 from reports.views_api import GeneratedReportViewSet
-from dashboard.views import dashboard, dashboard_admin, dashboard_field, dashboard_partner, dashboard_community, dashboard_analytics, dashboard_map, dashboard_guest, assigned_tasks, my_contributions, my_hours, insights_dashboard, dashboard_volunteer, volunteers_list, dashboard_project
+from dashboard.views import (
+    dashboard_admin,
+    dashboard_field,
+    dashboard_partner,
+    dashboard_guest,
+    assigned_tasks,
+    my_contributions,
+    my_hours,
+    insights_dashboard,
+    dashboard_volunteer,
+    volunteers_list,
+    dashboard_project,
+)
 from core.views import core_dashboard, core_analytics, about as core_about
 from core.views_api import PostViewSet, SiteConfigViewSet
 from monitoring import views as monitoring_views
@@ -24,7 +45,7 @@ from events import views as events_views
 from trees import web_public_views as trees_public_views
 from notifications import views as notifications_views
 from locations import views as locations_views
-from .fallback_views import noop, my_trees_view, my_tasks_view, role_management_view
+from .fallback_views import my_trees_view, my_tasks_view, role_management_view
 import tawi_project.fallback_views as fallback_views
 from accounts import views as accounts_views
 from donations import views as donations_views
@@ -46,6 +67,16 @@ router.register(r'followups', FollowUpViewSet)
 router.register(r'monitoring', MonitoringReportViewSet)
 router.register(r'feedback', FeedbackViewSet)
 router.register(r'reports/generated', GeneratedReportViewSet)
+
+
+def _notifications_dropdown(request):
+    """Small helper used only in this module to render the notifications dropdown.
+
+    Kept local to avoid a new module and to keep the URL line short (flake8).
+    """
+    notifications = request.user.notifications.all() if request.user.is_authenticated else []
+    return render(request, 'notifications/notifications_dropdown.html', {'notifications': notifications})
+
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -99,7 +130,7 @@ urlpatterns = [
     path('privacy/', TemplateView.as_view(template_name='core/privacy.html'), name='privacy'),
     path('profile/', TemplateView.as_view(template_name='core/profile.html'), name='profile'),
     path('terms/', TemplateView.as_view(template_name='core/terms.html'), name='terms'),
-    
+
     # Backwards-compatible top-level aliases for dashboard sub-pages used by
     # legacy templates that reverse without the 'dashboard:' namespace.
     path('dashboard/volunteers/', volunteers_list, name='volunteers_list'),
@@ -164,9 +195,27 @@ urlpatterns = [
         email_template_name='registration/password_reset_email.html',
         subject_template_name='registration/password_reset_subject.txt'
     ), name='password_reset'),
-    path('accounts/password_reset/done/', auth_views.PasswordResetDoneView.as_view(template_name='accounts/password_reset_done.html'), name='password_reset_done'),
-    path('accounts/reset/<uidb64>/<token>/', auth_views.PasswordResetConfirmView.as_view(template_name='accounts/password_reset_confirm.html'), name='password_reset_confirm'),
-    path('accounts/reset/done/', auth_views.PasswordResetCompleteView.as_view(template_name='accounts/password_reset_complete.html'), name='password_reset_complete'),
+    path(
+        'accounts/password_reset/done/',
+        auth_views.PasswordResetDoneView.as_view(
+            template_name='accounts/password_reset_done.html'
+        ),
+        name='password_reset_done',
+    ),
+    path(
+        'accounts/reset/<uidb64>/<token>/',
+        auth_views.PasswordResetConfirmView.as_view(
+            template_name='accounts/password_reset_confirm.html'
+        ),
+        name='password_reset_confirm',
+    ),
+    path(
+        'accounts/reset/done/',
+        auth_views.PasswordResetCompleteView.as_view(
+            template_name='accounts/password_reset_complete.html'
+        ),
+        name='password_reset_complete',
+    ),
     # django built-in auth views (login/logout and other auth helpers)
     path('accounts/', include('django.contrib.auth.urls')),
     # include notifications with explicit namespace so templates can use
@@ -194,8 +243,7 @@ urlpatterns = [
     path('qrcodes/<int:pk>/delete/', fallback_views.qrcodes_delete_view, name='qrcodes_delete'),
     path('qrcodes/history/', fallback_views.qrcode_history_view, name='qrcode_history'),
     # Include reports app with namespace so templates using 'reports:' resolve
-    path('reports/', include(('reports.urls', 'reports'), namespace='reports'),
-    ),
+    path('reports/', include(('reports.urls', 'reports'), namespace='reports')),
     # Provide a simple non-namespaced alias used by some dashboard templates.
     # Templates refer to the name 'reports' so expose it here to avoid
     # NoReverseMatch during template rendering in tests.
@@ -220,7 +268,7 @@ urlpatterns += [
     path('locations/<int:pk>/delete/', locations_views.delete_site, name='delete_site'),
     path('locations/<int:pk>/edit/', locations_views.edit_site, name='edit_site'),
 
-    path('notifications/dropdown/', lambda r: __import__('django.shortcuts').shortcuts.render(r, 'notifications/notifications_dropdown.html', {'notifications': r.user.notifications.all() if r.user.is_authenticated else []}), name='notifications_dropdown'),
+    path('notifications/dropdown/', _notifications_dropdown, name='notifications_dropdown'),
     path('notifications/detail/<int:pk>/', notifications_views.notifications_page, name='notifications_detail'),
     path('notifications/mark_read/<int:pk>/', notifications_views.notifications_mark, name='mark_read'),
 ]
@@ -260,4 +308,6 @@ if getattr(settings, 'USE_2FA', False):
     except Exception:
         # two_factor not installed or not configured; continue without 2FA routes
         pass
+
+# end of urls
 

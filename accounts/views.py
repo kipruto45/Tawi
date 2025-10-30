@@ -408,6 +408,24 @@ class CustomLoginView(DjangoLoginView):
             # don't let logging interfere with login
             pass
 
+        # Log redirect decision (no sensitive data). Session key may be None
+        # until the session is saved; include it when available to help
+        # diagnose session persistence issues in environments where cookies
+        # are lost.
+        try:
+            logger = logging.getLogger('accounts.login')
+            session_key = getattr(self.request.session, 'session_key', None)
+            logger.info('login_redirect_decision', extra={
+                'username': getattr(self.request.user, 'username', None),
+                'role': getattr(self.request.user, 'role', None),
+                'target': target,
+                'next_url': next_url,
+                'session_key': session_key,
+            })
+        except Exception:
+            # Don't let logging interfere with login flow
+            pass
+
         if target:
             try:
                 return redirect(target)

@@ -1,4 +1,5 @@
 from decimal import Decimal, InvalidOperation
+import json
 
 from django.shortcuts import render, redirect
 from django.urls import reverse
@@ -155,7 +156,7 @@ def stripe_webhook(request):
         if endpoint_secret:
             event = stripe.Webhook.construct_event(payload, sig_header, endpoint_secret)
         else:
-            event = stripe.Event.construct_from(django.utils.json.loads(payload), stripe.api_key)
+            event = stripe.Event.construct_from(json.loads(payload), stripe.api_key)
     except Exception:
         return HttpResponse(status=400)
 

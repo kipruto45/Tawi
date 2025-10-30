@@ -32,8 +32,4 @@ class TreeSpeciesSerializer(serializers.ModelSerializer):
         model = TreeSpecies
         fields = '__all__'
 
-
-class TreeSpeciesSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = TreeSpecies
-        fields = '__all__'
+    
