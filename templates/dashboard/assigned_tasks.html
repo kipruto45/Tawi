@@ -1,18 +1,81 @@
 {% load static %}
-<!doctype html>
-<html>
+<!DOCTYPE html>
+<html lang="en">
 <head>
-  <meta charset="utf-8">
-  <title>Assigned Tasks</title>
+  <meta charset="UTF-8">
+  <title>Assigned Tasks | Tawi Tree Planting Project</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/feather-icons"></script>
+  <style>
+    body {
+      background-image: url('{% static "img/tawi_forest_bg.jpg" %}');
+      background-size: cover;
+      background-position: center;
+      background-attachment: fixed;
+    }
+    .glass {
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(34, 197, 94, 0.2);
+      border-radius: 18px;
+      box-shadow: 0 6px 20px rgba(34, 197, 94, 0.12);
+    }
+  </style>
 </head>
-<body>
-  <h1>Assigned Tasks</h1>
-  <ul>
-  {% for t in tasks %}
-    <li>{{ t.name }} - {{ t.status }} - {{ t.deadline|default:'No deadline' }}</li>
-  {% empty %}
-    <li>No tasks assigned.</li>
-  {% endfor %}
-  </ul>
+
+<body class="min-h-screen flex items-center justify-center bg-green-50/70 p-6">
+  <div class="w-full max-w-3xl glass p-8">
+    <div class="text-center mb-6">
+      <h1 class="text-2xl font-bold text-green-700 flex justify-center items-center gap-2">
+        <i data-feather="check-circle" class="w-6 h-6 text-green-600"></i> Assigned Tasks
+      </h1>
+      <p class="text-green-600 text-sm mt-2">Track your current responsibilities and deadlines.</p>
+      <div class="w-20 h-1 bg-gradient-to-r from-green-500 to-green-700 mx-auto mt-3 rounded-full"></div>
+    </div>
+
+    {% if tasks %}
+      <ul class="divide-y divide-green-100">
+        {% for t in tasks %}
+          <li class="py-4 flex items-center justify-between hover:bg-green-50 px-3 rounded-lg transition">
+            <div>
+              <h3 class="text-green-800 font-semibold">{{ t.name }}</h3>
+              <p class="text-sm text-green-600 mt-1">
+                Status:
+                <span class="font-medium {% if t.status == 'Completed' %}text-green-700{% elif t.status == 'In Progress' %}text-yellow-600{% else %}text-red-600{% endif %}">
+                  {{ t.status }}
+                </span>
+              </p>
+              <p class="text-xs text-green-500 mt-1">
+                Deadline: {{ t.deadline|date:"M d, Y" |default:"No deadline" }}
+              </p>
+            </div>
+
+            <div>
+              {% if t.status == "Completed" %}
+                <i data-feather="award" class="w-5 h-5 text-green-600"></i>
+              {% elif t.status == "In Progress" %}
+                <i data-feather="loader" class="w-5 h-5 text-yellow-500 animate-spin"></i>
+              {% else %}
+                <i data-feather="clock" class="w-5 h-5 text-red-500"></i>
+              {% endif %}
+            </div>
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <div class="text-center py-6 bg-green-50 rounded-lg border border-green-100 text-green-700">
+        <i data-feather="inbox" class="w-8 h-8 mx-auto mb-2"></i>
+        <p class="text-sm">No tasks assigned at the moment 🌱</p>
+      </div>
+    {% endif %}
+
+    <div class="text-center mt-6">
+      <a href="{% url 'dashboard_guest' %}" class="text-green-700 text-sm hover:underline flex items-center justify-center gap-1">
+        <i data-feather="arrow-left" class="w-4 h-4"></i> Back to Dashboard
+      </a>
+    </div>
+  </div>
+
+  <script>feather.replace();</script>
 </body>
 </html>

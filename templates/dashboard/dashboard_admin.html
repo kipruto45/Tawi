@@ -108,9 +108,7 @@
     </div>
 
     <div>
-      <a href="{% url 'rest_framework:logout' %}" class="sidebar-link text-red-600 hover:bg-red-100 hover:text-red-700">
-        <i data-feather="log-out" class="w-4 h-4"></i> Logout
-      </a>
+      {% include 'includes/logout_form.html' %}
     </div>
   </aside>
 
@@ -209,6 +207,33 @@
         </div>
       </div>
     </header>
+
+    <!-- Quick admin actions -->
+    <section class="mb-6">
+      <div class="flex flex-wrap gap-3 items-center">
+        <a href="{% url 'core:message_send' %}" class="inline-flex items-center gap-2 bg-green-600 text-white px-3 py-2 rounded shadow-sm"> 
+          <i data-feather="mail" class="w-4 h-4"></i> Send Message
+        </a>
+        <a href="{% url 'core:sent_messages' %}" class="inline-flex items-center gap-2 bg-white border text-green-700 px-3 py-2 rounded shadow-sm"> 
+          <i data-feather="inbox" class="w-4 h-4"></i> View Sent
+        </a>
+        <a href="{% url 'trees:tree_add' %}" class="inline-flex items-center gap-2 bg-white border text-green-700 px-3 py-2 rounded shadow-sm"> 
+          <i data-feather="plus-circle" class="w-4 h-4"></i> Add Tree
+        </a>
+        <a href="{% url 'dashboard:task_add' %}" class="inline-flex items-center gap-2 bg-white border text-green-700 px-3 py-2 rounded shadow-sm"> 
+          <i data-feather="check-square" class="w-4 h-4"></i> Assign Task
+        </a>
+        <a href="{% url 'core:partner_add' %}" class="inline-flex items-center gap-2 bg-white border text-green-700 px-3 py-2 rounded shadow-sm"> 
+          <i data-feather="briefcase" class="w-4 h-4"></i> Add Partner
+        </a>
+        <a href="{% url 'donations:donations' %}" class="inline-flex items-center gap-2 bg-white border text-green-700 px-3 py-2 rounded shadow-sm"> 
+          <i data-feather="dollar-sign" class="w-4 h-4"></i> Donations
+        </a>
+        <a href="{% url 'locations:add_site' %}" class="inline-flex items-center gap-2 bg-white border text-green-700 px-3 py-2 rounded shadow-sm"> 
+          <i data-feather="map-pin" class="w-4 h-4"></i> Add Location
+        </a>
+      </div>
+    </section>
 
     <!-- Stats Section -->
     <section class="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">

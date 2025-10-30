@@ -7,8 +7,6 @@ class DashboardRoleAccessTests(TestCase):
     def setUp(self):
         User = get_user_model()
         # create role-specified users
-        # create users and set their role at creation (supported by the custom
-        # User model via extra fields)
         self.admin = User.objects.create_user(username='r_admin', password='pw', role='admin')
         self.field = User.objects.create_user(username='r_field', password='pw', role='field_officer')
         self.vol = User.objects.create_user(username='r_vol', password='pw', role='volunteer')
@@ -24,59 +22,74 @@ class DashboardRoleAccessTests(TestCase):
         # anonymous -> redirect to login
         resp = self.client.get(url)
         self._assert_redirects_to_login(resp)
-    # non-admin -> forbidden (use POST login to exercise the login view)
-    login_url = reverse('accounts:login')
-    self.client.post(login_url, {'username': 'r_field', 'password': 'pw'})
-    resp = self.client.get(url)
+
+        login_url = reverse('accounts:login')
+        # non-admin -> forbidden
+        self.client.post(login_url, {'username': 'r_field', 'password': 'pw'})
+        resp = self.client.get(url)
         self.assertEqual(resp.status_code, 403)
         self.client.logout()
-    # admin -> ok
-    self.client.post(login_url, {'username': 'r_admin', 'password': 'pw'})
-    resp = self.client.get(url)
+
+        # admin -> ok
+        self.client.post(login_url, {'username': 'r_admin', 'password': 'pw'})
+        resp = self.client.get(url)
         self.assertEqual(resp.status_code, 200)
 
     def test_field_access(self):
         url = reverse('dashboard_field')
         resp = self.client.get(url)
         self._assert_redirects_to_login(resp)
-    self.client.post(login_url, {'username': 'r_field', 'password': 'pw'})
-    resp = self.client.get(url)
+
+        login_url = reverse('accounts:login')
+        self.client.post(login_url, {'username': 'r_field', 'password': 'pw'})
+        resp = self.client.get(url)
         self.assertEqual(resp.status_code, 200)
-    self.client.post(login_url, {'username': 'r_vol', 'password': 'pw'})
-    resp = self.client.get(url)
+
+        # volunteer should be forbidden
+        self.client.post(login_url, {'username': 'r_vol', 'password': 'pw'})
+        resp = self.client.get(url)
         self.assertEqual(resp.status_code, 403)
 
     def test_volunteer_access(self):
         url = reverse('dashboard_volunteer')
         resp = self.client.get(url)
         self._assert_redirects_to_login(resp)
-    self.client.post(login_url, {'username': 'r_vol', 'password': 'pw'})
-    resp = self.client.get(url)
+
+        login_url = reverse('accounts:login')
+        self.client.post(login_url, {'username': 'r_vol', 'password': 'pw'})
+        resp = self.client.get(url)
         self.assertEqual(resp.status_code, 200)
+
         # admin should also be allowed
-    self.client.post(login_url, {'username': 'r_admin', 'password': 'pw'})
-    resp = self.client.get(url)
+        self.client.post(login_url, {'username': 'r_admin', 'password': 'pw'})
+        resp = self.client.get(url)
         self.assertEqual(resp.status_code, 200)
 
     def test_partner_access(self):
         url = reverse('dashboard_partner')
         resp = self.client.get(url)
         self._assert_redirects_to_login(resp)
-    self.client.post(login_url, {'username': 'r_partner', 'password': 'pw'})
-    resp = self.client.get(url)
+
+        login_url = reverse('accounts:login')
+        self.client.post(login_url, {'username': 'r_partner', 'password': 'pw'})
+        resp = self.client.get(url)
         self.assertEqual(resp.status_code, 200)
-    self.client.post(login_url, {'username': 'r_vol', 'password': 'pw'})
-    resp = self.client.get(url)
+
+        self.client.post(login_url, {'username': 'r_vol', 'password': 'pw'})
+        resp = self.client.get(url)
         self.assertEqual(resp.status_code, 403)
 
     def test_project_access(self):
         url = reverse('dashboard_project')
         resp = self.client.get(url)
         self._assert_redirects_to_login(resp)
-    self.client.post(login_url, {'username': 'r_proj', 'password': 'pw'})
-    resp = self.client.get(url)
+
+        login_url = reverse('accounts:login')
+        self.client.post(login_url, {'username': 'r_proj', 'password': 'pw'})
+        resp = self.client.get(url)
         self.assertEqual(resp.status_code, 200)
-    self.client.post(login_url, {'username': 'r_admin', 'password': 'pw'})
-    resp = self.client.get(url)
+
         # admin should also be allowed
+        self.client.post(login_url, {'username': 'r_admin', 'password': 'pw'})
+        resp = self.client.get(url)
         self.assertEqual(resp.status_code, 200)

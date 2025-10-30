@@ -42,7 +42,7 @@
   {% include 'includes/sidebar_feedback_link.html' %}
   <a href="{% url 'notifications:notifications_page' %}" class="sidebar-link"><i data-feather="bell" class="w-4 h-4"></i> Notifications</a>
       <a href="{% url 'trees' %}" class="sidebar-link"><i data-feather="tree" class="w-4 h-4"></i> Trees</a>
-      <a href="{% url 'rest_framework:logout' %}" class="sidebar-link text-red-600 hover:bg-red-100 hover:text-red-700"><i data-feather="log-out" class="w-4 h-4"></i> Logout</a>
+  {% include 'includes/logout_form.html' %}
       </nav>
     </div>
   </aside>

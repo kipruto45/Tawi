@@ -1,6 +1,7 @@
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 import logging
 from django.contrib.auth.decorators import user_passes_test
+from django.contrib import messages
 from django.contrib.auth.views import redirect_to_login
 from django.conf import settings
 from django.http import HttpResponseForbidden
@@ -325,6 +326,31 @@ def assigned_tasks(request):
         qs = []
 
     return render(request, 'dashboard/assigned_tasks.html', {'tasks': qs})
+
+
+
+@role_required('admin', 'project_manager')
+def task_add(request):
+    """Create or assign a Task. Admins and project managers can assign tasks."""
+    try:
+        from .forms import TaskForm
+    except Exception:
+        TaskForm = None
+
+    if TaskForm is None:
+        # If the form isn't available, render a simple message rather than raising
+        return render(request, 'dashboard/task_add.html', {'error': 'Task form is not available.'})
+
+    if request.method == 'POST':
+        form = TaskForm(request.POST)
+        if form.is_valid():
+            task = form.save()
+            messages.success(request, 'Task created and assigned.')
+            return redirect('dashboard:dashboard_admin')
+    else:
+        form = TaskForm()
+
+    return render(request, 'dashboard/task_add.html', {'form': form})
 
 
 def volunteers_list(request):

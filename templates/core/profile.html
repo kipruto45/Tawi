@@ -112,10 +112,7 @@
          class="bg-green-600 hover:bg-green-700 text-white text-sm px-5 py-2 rounded-md shadow flex items-center gap-1 transition">
         <i data-feather="home" class="w-4 h-4"></i> Back to Dashboard
       </a>
-      <a href="{% url 'rest_framework:logout' %}"
-         class="bg-green-100 hover:bg-green-200 text-green-700 text-sm px-5 py-2 rounded-md shadow flex items-center gap-1 transition">
-        <i data-feather="log-out" class="w-4 h-4"></i> Logout
-      </a>
+      {% include 'includes/logout_form.html' %}
     </div>
 
     <!-- Footer -->

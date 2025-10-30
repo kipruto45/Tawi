@@ -1,0 +1,88 @@
+{% load static %}
+{% extends 'base.html' %}
+
+{% block title %}🌿 Recently Sent Messages | Tawi Project{% endblock %}
+
+{% block content %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/feather-icons"></script>
+  <style>
+    body {
+      background-image: url('{% static "img/tawi_forest_bg.jpg" %}');
+      background-size: cover;
+      background-position: center;
+      background-attachment: fixed;
+    }
+    .glass {
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(34, 197, 94, 0.2);
+      border-radius: 18px;
+      box-shadow: 0 6px 20px rgba(34, 197, 94, 0.12);
+      animation: fadeIn 0.6s ease-in-out;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+
+<body class="min-h-screen flex items-center justify-center bg-green-50/70 p-6">
+
+  <div class="w-full max-w-4xl glass p-8">
+    <!-- Header -->
+    <div class="flex justify-center mb-4">
+      <i data-feather="inbox" class="w-12 h-12 text-green-600"></i>
+    </div>
+    <h1 class="text-2xl font-bold text-center text-green-700 mb-2">Recently Sent Messages</h1>
+    <p class="text-center text-green-600 mb-6">View the latest messages shared with users through the Tawi system.</p>
+
+    <!-- Recent Messages List -->
+    {% if recent %}
+      <div class="space-y-5">
+        {% for m in recent %}
+          <div class="p-5 bg-white/90 border border-green-100 rounded-xl shadow-sm hover:shadow-md transition duration-200">
+            <div class="flex justify-between items-start">
+              <div>
+                <h3 class="font-semibold text-green-800 text-lg">{{ m.subject|default:"(no subject)" }}</h3>
+                <p class="text-xs text-green-500 mt-1">
+                  Sent by {{ m.sender }} — {{ m.recipients_count }} recipients
+                </p>
+              </div>
+              <i data-feather="mail" class="w-5 h-5 text-green-600"></i>
+            </div>
+            <div class="mt-3 text-sm text-green-700 whitespace-pre-wrap">
+              {{ m.body }}
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="p-5 bg-white/90 border border-green-100 rounded-xl text-center text-green-600">
+        <i data-feather="info" class="inline w-5 h-5 mr-1 text-green-500"></i>
+        No messages sent yet.
+      </div>
+    {% endif %}
+
+    <!-- Footer Links -->
+    <div class="mt-6 text-center">
+      <a href="{% url 'core:message_send' %}"
+         class="inline-flex items-center gap-1 text-sm text-green-700 hover:underline font-medium">
+        <i data-feather="send" class="w-4 h-4"></i> Send a new message
+      </a>
+    </div>
+
+    <div class="mt-6 text-center text-xs text-green-500">
+      © 2025 Tawi Tree Planting Project 🌿
+    </div>
+  </div>
+
+  <script>feather.replace();</script>
+</body>
+</html>
+{% endblock %}

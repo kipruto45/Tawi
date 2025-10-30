@@ -1,4 +1,10 @@
 from django.shortcuts import render, redirect
+from django.contrib.auth.decorators import user_passes_test, login_required
+from django.core.mail import send_mail
+from django.core.cache import cache
+from django.contrib import messages as django_messages
+from django.contrib.auth import get_user_model
+from django.urls import reverse
 
 def landing(request):
     """Site landing page.
@@ -39,13 +45,25 @@ def partner_list(request):
 
 
 def partner_add(request):
-    """Placeholder view for adding a partner.
+    """Add a partner via a simple form and persist to the Core Partner model.
 
-    Currently redirects back to the partner list. This ensures templates
-    that reverse 'core:partner_add' will succeed. Implement a proper
-    create form here in a follow-up task if desired.
+    If the Partner model/migrations are not available this will fall back
+    to redirecting back to the partner list to keep templates functional.
     """
-    return redirect('partner_list')
+    try:
+        from .forms import PartnerForm
+        from .models import Partner
+    except Exception:
+        return redirect('partner_list')
+
+    if request.method == 'POST':
+        form = PartnerForm(request.POST)
+        if form.is_valid():
+            form.save()
+            return redirect('partner_list')
+    else:
+        form = PartnerForm()
+    return render(request, 'core/partner_add.html', {'form': form})
 
 
 def partner_detail(request, pk):
@@ -72,6 +90,123 @@ def message_list(request):
         {'subject': 'Welcome to Tawi', 'from': 'Team', 'date': '2025-01-01'},
     ]
     return render(request, 'core/message_list.html', {'messages': messages})
+
+
+def _is_site_admin(user):
+    try:
+        if not (user and user.is_authenticated):
+            return False
+        # superusers or a role string 'admin' are allowed
+        if getattr(user, 'is_superuser', False):
+            return True
+        if getattr(user, 'is_staff', False):
+            return True
+        # some installs store a role on a related profile
+        if getattr(user, 'role', None) == 'admin':
+            return True
+        try:
+            # fallback: group name 'Admins'
+            if 'Admins' in set(user.groups.values_list('name', flat=True)):
+                return True
+        except Exception:
+            pass
+    except Exception:
+        pass
+    return False
+
+
+@user_passes_test(_is_site_admin, login_url='accounts:login')
+def message_send(request):
+    """Admin-only lightweight message sender.
+
+    This view provides a simple form to send email messages to users.
+    Sent messages are stored in the cache (last 50) so admins can review
+    recently sent messages via `sent_messages` view. This is intentionally
+    lightweight (no new models) so it works without migrations.
+    """
+    User = get_user_model()
+    if request.method == 'POST':
+        subject = request.POST.get('subject', '').strip()
+        body = request.POST.get('body', '').strip()
+        recipients_mode = request.POST.get('recipients', 'all')
+        recipients = []
+        if recipients_mode == 'all':
+            recipients = list(User.objects.filter(is_active=True).values_list('email', flat=True))
+        else:
+            explicit = request.POST.get('emails', '')
+            recipients = [e.strip() for e in explicit.split(',') if e.strip()]
+
+        # send mail best-effort; skip empty recipients
+        sent_count = 0
+        if recipients:
+            try:
+                send_mail(subject or 'Message from Tawi', body or '', request.user.email or None, recipients, fail_silently=True)
+                sent_count = len(recipients)
+            except Exception:
+                sent_count = 0
+
+        # persist message and recipients to DB (if available) and enqueue async send
+        try:
+            from .models import MessageSent, MessageRecipient
+            preview = ','.join(recipients[:20]) if recipients else ''
+            ms = MessageSent.objects.create(
+                subject=subject,
+                body=body,
+                sender=request.user.username,
+                recipients_count=len(recipients),
+                recipients_preview=preview,
+            )
+            # create recipient records
+            rec_objs = []
+            for r in recipients:
+                if r:
+                    rec_objs.append(MessageRecipient(message=ms, email=r, status='pending'))
+            if rec_objs:
+                MessageRecipient.objects.bulk_create(rec_objs)
+
+            # enqueue Celery task to send this message (best-effort)
+            try:
+                from .tasks import send_message_task
+                # use delay to enqueue; if Celery not running this will still work when configured
+                send_message_task.delay(ms.id)
+            except Exception:
+                # fallback: attempt synchronous send to avoid losing message
+                try:
+                    send_mail(subject or 'Message from Tawi', body or '', request.user.email or None, recipients, fail_silently=True)
+                except Exception:
+                    pass
+
+        except Exception:
+            # fallback to cache-based recent list if DB not available
+            record = {
+                'subject': subject,
+                'body': body,
+                'recipients_count': len(recipients),
+                'recipients_preview': (recipients[:10] if recipients else []),
+                'sender': request.user.username,
+            }
+            cache_key = 'core.recent_sent_messages'
+            recent = cache.get(cache_key, [])
+            recent.insert(0, record)
+            recent = recent[:50]
+            cache.set(cache_key, recent, timeout=None)
+
+        django_messages.success(request, f'Message queued to {len(recipients)} recipients (best-effort).')
+        return redirect(reverse('core:sent_messages'))
+
+    return render(request, 'core/message_send.html', {})
+
+
+@user_passes_test(_is_site_admin, login_url='accounts:login')
+def sent_messages(request):
+    # prefer DB-backed MessageSent entries if available
+    try:
+        from .models import MessageSent
+        recent = list(MessageSent.objects.all().order_by('-created_at')[:50])
+    except Exception:
+        cache_key = 'core.recent_sent_messages'
+        recent = cache.get(cache_key, [])
+    return render(request, 'core/sent_messages.html', {'recent': recent})
 
 
 def contact(request):

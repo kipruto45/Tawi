@@ -50,12 +50,16 @@
         <h1 class="text-green-700 font-extrabold text-xl">Tawi Tree Planting Project</h1>
       </div>
       <nav class="space-x-4 text-green-700 font-medium text-sm">
-    <a href="{% url 'dashboard:dashboard' %}" class="hover:underline">Dashboard</a>
-    <a href="{% url 'trees:tree_list' %}" class="hover:underline">Trees</a>
-  <a href="{% url 'reports:reports-dashboard' %}" class="hover:underline">Reports</a>
-    <a href="{% url 'media_app:media_list' %}" class="hover:underline">Media</a>
-    <a href="{% url 'rest_framework:logout' %}" class="hover:underline">Logout</a>
-      </nav>
+      <a href="{% url 'dashboard:dashboard' %}" class="hover:underline">Dashboard</a>
+      <a href="{% url 'trees:tree_list' %}" class="hover:underline">Trees</a>
+    <a href="{% url 'reports:reports-dashboard' %}" class="hover:underline">Reports</a>
+      <a href="{% url 'media_app:media_list' %}" class="hover:underline">Media</a>
+      <!-- Logout must be a POST to satisfy the configured LogoutView (which rejects GET). Use a tiny form styled like a link. -->
+      <form method="post" action="{% url 'logout' %}" style="display:inline">
+        {% csrf_token %}
+        <button type="submit" class="hover:underline bg-transparent border-0 p-0 font-medium text-sm text-green-700">Logout</button>
+      </form>
+        </nav>
     </div>
   </header>
 

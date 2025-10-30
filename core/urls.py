@@ -6,6 +6,7 @@ from .views import (
 )
 from .views import terms, privacy
 from django.shortcuts import redirect
+from .views import message_send, sent_messages
 
 urlpatterns = [
     path('', landing, name='landing'),
@@ -24,6 +25,9 @@ urlpatterns = [
     path('partners/<int:pk>/edit/', partner_edit, name='partner_edit'),
     path('partners/<int:pk>/delete/', partner_delete, name='partner_delete'),
     path('messages/', message_list, name='message_list'),
+    # Admin helper pages: send messages and view recently sent ones
+    path('messages/send/', message_send, name='message_send'),
+    path('messages/sent/', sent_messages, name='sent_messages'),
     path('contact/', contact, name='contact'),
     path('profile/', profile, name='profile'),
 ]
